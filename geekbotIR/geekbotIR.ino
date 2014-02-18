@@ -37,20 +37,63 @@
 
 #define CW_SPEED 45
 #define CCW_SPEED 115
+  
+#define OBJECT_IR_READING 500
+  
+Servo servoLeft;
+Servo servoRight;
 
 void setup()
 {
-  Servo servoLeft;
-  Servo servoRight;
 
   servoLeft.attach(9); 
   servoRight.attach(10);
-
-  servoLeft.write(CW_SPEED);
-  servoRight.write(CCW_SPEED);
+  
+  roverForward();
 }
 
 void loop()
 {
+  if(analogRead(0) >OBJECT_IR_READING)
+  {
+    roverStop();
+    
+  }
+  else
+  {
+    roverForward();
+    
+  }
   
+  
+}
+
+
+void roverForward()
+{
+  servoLeft.write(CCW_SPEED);
+  servoRight.write(CW_SPEED);
+}
+
+void roverBackward()
+{
+  servoLeft.write(CW_SPEED);
+  servoRight.write(CCW_SPEED);
+}
+
+void roverLeft()
+{
+  servoLeft.write(CW_SPEED);
+  servoRight.write(CW_SPEED);
+}
+
+void roverRight()
+{
+  servoLeft.write(CCW_SPEED);
+  servoRight.write(CCW_SPEED);
+}
+void roverStop()
+{
+  servoLeft.write(90);
+  servoRight.write(90);
 }
