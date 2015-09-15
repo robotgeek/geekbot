@@ -1,6 +1,6 @@
 #include <Servo.h> 
 
-#define PAN_SERVO_PIN 5
+#define PAN_SERVO_PIN 12
 #define WRIST_PIN 6
 #define GRIPPER_PIN 9
 #define LEFT_DRIVE_PIN 10

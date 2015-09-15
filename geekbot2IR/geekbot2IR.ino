@@ -31,7 +31,7 @@
 
 //
 //Try Full 115 ccw / 65 cw
-#define PAN_SERVO_PIN 5
+#define PAN_SERVO_PIN 12
 #define WRIST_SERVO_PIN 6
 #define GRIPPER_SERVO_PIN 9
 #define LEFT_SERVO_PIN 10
@@ -56,7 +56,8 @@
 #define SERVO_DIRECTION_CW 1
 #define SERVO_DIRECTION_CCW -1
 #define SERVO_DIRECTION_STOP 0
-  
+ 
+#define BUZZER_PIN 2
 
 #include <Servo.h>
 
@@ -92,6 +93,10 @@ void setup()
   servoLeft.write(1500); //write 1500us, 90 degrees
   servoRight.write(1500); //write 1500us, 90 degrees
   
+  pinMode(BUZZER_PIN, OUTPUT);
+  digitalWrite(BUZZER_PIN, HIGH);
+  delay(250);
+  digitalWrite(BUZZER_PIN, LOW);
   roverForward(3);
 }
 
@@ -110,7 +115,7 @@ void loop()
     //if panValue is more than 160, switch sign to be negative so that panValue will start going down
     if(panValue > 160)
     {
-      sign = -2;
+      sign = -2; 
     }
     //if panValue is less than 20, switch sign to be positive so that panValue will start going up
     else if (panValue <20)

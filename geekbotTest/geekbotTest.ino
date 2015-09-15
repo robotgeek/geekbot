@@ -31,7 +31,7 @@
 
 //
 //Try Full 115 ccw / 65 cw
-#define PAN_SERVO_PIN 5
+#define PAN_SERVO_PIN 12
 #define WRIST_SERVO_PIN 6
 #define GRIPPER_SERVO_PIN 9
 #define LEFT_SERVO_PIN 10
