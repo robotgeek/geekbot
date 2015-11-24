@@ -37,6 +37,9 @@
 #define LEFT_SERVO_PIN 10
 #define RIGHT_SERVO_PIN 11
 
+#define LED_RIGHT 4
+#define LED_LEFT 7
+
 
 #define CW_MIN_SPEED 1400 
 #define CW_MAX_SPEED 1000 
@@ -64,7 +67,7 @@
 #define CW_SPEED 72 //increase if the rover is drifting left
 #define CCW_SPEED 113 //decrease if the rover is drifting right
   
-#define OBJECT_IR_READING 150
+#define OBJECT_IR_READING 300
   
 Servo servoPan, servoWrist, servoGripper, servoLeft, servoRight;
 
@@ -94,6 +97,8 @@ void setup()
   servoRight.write(1500); //write 1500us, 90 degrees
   
   pinMode(BUZZER_PIN, OUTPUT);
+  pinMode(LED_RIGHT, OUTPUT);
+  pinMode(LED_LEFT, OUTPUT);
   digitalWrite(BUZZER_PIN, HIGH);
   delay(250);
   digitalWrite(BUZZER_PIN, LOW);
@@ -133,35 +138,54 @@ void loop()
    //object is to the left
    if(panValue > 110)
    {
+      digitalWrite(LED_RIGHT, HIGH);
+      digitalWrite(LED_LEFT, LOW);
+
      roverRotateRight(3); 
      delay(250);
      roverStop();
+      digitalWrite(LED_RIGHT, LOW);
+      digitalWrite(LED_LEFT, LOW);
    }
    //object is to the right
    else if(panValue < 70)
    {
      
+      digitalWrite(LED_RIGHT, LOW);
+      digitalWrite(LED_LEFT, HIGH);
      roverRotateLeft(3); 
      delay(250);
      roverStop();
+      digitalWrite(LED_RIGHT, LOW);
+      digitalWrite(LED_LEFT, LOW);
    }
    //object is dead ahead
    else
    {
+     
+      digitalWrite(LED_RIGHT, LOW);
+      digitalWrite(LED_LEFT, LOW);
      roverBackward(3);
      delay(250);
      roverStop();
      roverRotateLeft(3);
      delay(500);
      roverStop();
+      digitalWrite(LED_RIGHT, LOW);
+      digitalWrite(LED_LEFT, LOW);
    }
     
   }
   //no objects, move forward
   else
   {
+    
+      digitalWrite(LED_RIGHT, HIGH);
+      digitalWrite(LED_LEFT, HIGH);
     roverForward(3);
     
+      digitalWrite(LED_RIGHT, LOW);
+      digitalWrite(LED_LEFT, LOW);
   }
   
   
