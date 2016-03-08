@@ -23,26 +23,27 @@
  *
  ***********************************************************************************/
 //Includes
-
+#include <Servo.h> //include servo library to control continous turn servos
 
 //servo speed
 //95 deg - 125 deg full ccw
 //85 deg - 55 deg full cw
 
-//
-//Try Full 115 ccw / 65 cw
+
 #define PAN_SERVO_PIN 12
 #define WRIST_SERVO_PIN 6
 #define GRIPPER_SERVO_PIN 9
 #define LEFT_SERVO_PIN 10
 #define RIGHT_SERVO_PIN 11
 
-#define DISTANCE_SENSOR_PIN 1
-#define LEFT_FSR_PIN 6
-#define RIGHT_FSR_PIN 7
+#define BUZZER_PIN 2
+#define LED_RIGHT_PIN 4
+#define LED_LEFT_PIN 7
+#define BUTTON_PIN 8
+
+#define DISTANCE_SENSOR_PIN 0
 
 
-#include <Servo.h>
 
 #define CW_MIN_SPEED 1400 //increase if the rover is drifting left
 #define CW_MAX_SPEED 1000 //increase if the rover is drifting left
@@ -51,23 +52,8 @@
 #define CCW_MAX_SPEED 2000 //decrease if the rover is drifting right
 
 #define SERVO_STOP 1500
-
-#define LOW_SPEED 0
-#define HIGH_SPEED 10
-  
-#define SERVO_DIRECTION_CW 1
-#define SERVO_DIRECTION_CCW -1
-#define SERVO_DIRECTION_STOP 0
-  
-#define OBJECT_IR_READING 400
   
 Servo servoPan, servoWrist, servoGripper, servoLeft, servoRight;
-
-long previousMillis = 0;        // will store last time pan servo, was updated
-long interval = 2;           // interval at which to blink (milliseconds)
-
-int sign = 5; //positive when going up, negative when going down
-int panValue = 0;
 
 
 int servoSpeedLeft;
@@ -77,135 +63,99 @@ int roverSpeed = 1;
 
 void setup()
 {
-
-  servoPan.attach(PAN_SERVO_PIN);
-  servoWrist.attach(WRIST_SERVO_PIN, 1000, 2000);    //attach with limits
-  servoGripper.attach(GRIPPER_SERVO_PIN, 750, 2400); //attach with limits, lower limit makes sure gripper doesn't burn out
+  Serial.begin(9600);
+  Serial.println("Starting Geekbot Test");
+  //basic drive servos
   servoLeft.attach(LEFT_SERVO_PIN); 
   servoRight.attach(RIGHT_SERVO_PIN);
+  servoLeft.write(SERVO_STOP); //write 1500us, servo stopped
+  servoRight.write(SERVO_STOP); //write 1500us, servo stopped
   
-  servoPan.write(1500); //write 1500us, 90 degrees
-  servoWrist.write(1500); //write 1500us, 90 degrees
-  servoGripper.write(1500); //write 1500us, 90 degrees
-  servoLeft.write(1500); //write 1500us, 90 degrees
-  servoRight.write(1500); //write 1500us, 90 degrees
+  
+  //Pan servo for servo sensor
+  servoPan.attach(PAN_SERVO_PIN);                    //attach pan 9g microservo
+  servoPan.write(1500);  //write 1500us, 90 degrees
+  
+  //gripper and wrist angle
+  servoWrist.attach(WRIST_SERVO_PIN, 1000, 2000);    //attach with limits
+  servoGripper.attach(GRIPPER_SERVO_PIN, 750, 2400); //attach with limits, lower limit makes sure gripper doesn't burn out
+  servoWrist.write(1500); //write 1500us, servo stopped
+  servoGripper.write(1500);  //write 1500us, servo stopped
+  
+  pinMode(LED_RIGHT_PIN, OUTPUT);
+  pinMode(LED_LEFT_PIN, OUTPUT);
+  pinMode(BUZZER_PIN, OUTPUT);
+  pinMode(BUTTON_PIN, INPUT);
+
+
+  Serial.println("Testing Left Servo");
+  servoLeft.writeMicroseconds(CW_MIN_SPEED);
+  delay(1000);
+  servoLeft.writeMicroseconds(CW_MAX_SPEED);
+  delay(1000);
+  servoLeft.writeMicroseconds(CCW_MIN_SPEED);
+  delay(1000);
+  servoLeft.writeMicroseconds(CCW_MAX_SPEED);
+  delay(1000);
+  servoLeft.writeMicroseconds(SERVO_STOP);
+  delay(1000);
+  
+  Serial.println("Testing Right Servo");
+  servoRight.writeMicroseconds(CW_MIN_SPEED);
+  delay(1000);
+  servoRight.writeMicroseconds(CW_MAX_SPEED);
+  delay(1000);
+  servoRight.writeMicroseconds(CCW_MIN_SPEED);
+  delay(1000);
+  servoRight.writeMicroseconds(CCW_MAX_SPEED);
+  delay(1000);
+  servoRight.writeMicroseconds(SERVO_STOP);
+  delay(1000);
+  
+  
+  
+  Serial.println("Testing Pan Servo");
+  servoPan.writeMicroseconds(2000);
+  delay(1000);
+  servoPan.writeMicroseconds(1000);
+  delay(1000);
+  servoPan.writeMicroseconds(1500);
+  delay(1000);
+  
+  
+  
+  Serial.println("Testing Buzzers and LEDs");
+  digitalWrite(BUZZER_PIN, HIGH);
+  delay(1000);
+  digitalWrite(BUZZER_PIN, LOW);  
+  digitalWrite(LED_RIGHT_PIN, HIGH);
+  delay(1000);
+  digitalWrite(LED_RIGHT_PIN, LOW);  
+  digitalWrite(LED_LEFT_PIN, HIGH);
+  delay(1000);
+  digitalWrite(LED_LEFT_PIN, LOW);  
+  
+  
+  
+  
+  Serial.println("Begin Button and IR sensor Test");
   
 }
 
 void loop()
 {
-
-  roverForward(roverSpeed);   //forward 1 second half speed
-  delay(1000);
-  roverStop();
-  delay(1000);
-
-  roverBackward(roverSpeed);  //reverse 1 second half speed
-  delay(1000);
-  roverStop();
-  delay(1000);
-
-  roverRotateLeft(roverSpeed);       //left 1 second half speed
-  delay(1000);
-  roverStop();
-  delay(1000);
+  if(digitalRead(BUTTON_PIN) == HIGH)
+  {
+    digitalWrite(BUZZER_PIN, HIGH);
+  }
+  else
+  {
+    digitalWrite(BUZZER_PIN, LOW);  
+  }
  
-  roverRotateRight(roverSpeed);      //right 1 second half speed
-  delay(1000);
-  roverStop();
-  delay(1000);
-
-  roverSpeed = roverSpeed + 1;
-  
+  Serial.print("Analog Sensor:");
+  Serial.println(analogRead(DISTANCE_SENSOR_PIN));
+  delay(10);
+ 
 }
-
-void setLeftServoSpeed(int servoSpeed, int servoDirection)
-{
-  //make sure the servoSpeed passed to the function is within the limits
-  servoSpeed = min(servoSpeed, HIGH_SPEED);
-  servoSpeed = max(servoSpeed, LOW_SPEED);
-  
-  //if servo speed is 0 or direction is 0, set the servo to stop
-  if(servoSpeed == 0 || servoDirection == SERVO_DIRECTION_STOP)
-  {
-    servoSpeedLeft = SERVO_STOP;
-
-  }
-  //cw direction/speed
-  else if(servoDirection == SERVO_DIRECTION_CW)
-  {
-    servoSpeedLeft = map(servoSpeed, 0, 10, CW_MIN_SPEED, CW_MAX_SPEED );
-  }
-  //ccw direction/speed
-  else if(servoDirection == SERVO_DIRECTION_CCW)
-  {
-    servoSpeedLeft = map(servoSpeed, 0, 10, CCW_MIN_SPEED, CCW_MAX_SPEED );
-
-  }
-  //send results to servo  
-  servoLeft.writeMicroseconds(servoSpeedLeft);
-}
-
-void setRightServoSpeed(int servoSpeed, int servoDirection)
-{
-  //make sure the servoSpeed passed to the function is within the limits
-  servoSpeed = min(servoSpeed, HIGH_SPEED);
-  servoSpeed = max(servoSpeed, LOW_SPEED);
-  
-  //if servo speed is 0 or direction is 0, set the servo to stop
-  if(servoSpeed == 0 || servoDirection == SERVO_DIRECTION_STOP)
-  {
-    servoSpeedRight = SERVO_STOP;
-
-  }
-  //cw direction/speed
-  else if(servoDirection == SERVO_DIRECTION_CW)
-  {
-    servoSpeedRight = map(servoSpeed, 0, 10, CW_MIN_SPEED, CW_MAX_SPEED );
-  }
-  //ccw direction/speed
-  else if(servoDirection == SERVO_DIRECTION_CCW)
-  {
-    servoSpeedRight = map(servoSpeed, 0, 10, CCW_MIN_SPEED, CCW_MAX_SPEED );
-
-  }
-  //send results to servo  
-  servoRight.writeMicroseconds(servoSpeedRight);
-}
-
-
-
-void roverForward(int tempRoverSpeed)
-{
-  setLeftServoSpeed(tempRoverSpeed, SERVO_DIRECTION_CCW);
-  setRightServoSpeed(tempRoverSpeed, SERVO_DIRECTION_CW);
-
-}
-
-void roverBackward(int tempRoverSpeed)
-{
-  setLeftServoSpeed(tempRoverSpeed, SERVO_DIRECTION_CW);
-  setRightServoSpeed(tempRoverSpeed, SERVO_DIRECTION_CCW);
-
-}
-
-void roverRotateLeft(int tempRoverSpeed)
-{
-  setLeftServoSpeed(tempRoverSpeed, SERVO_DIRECTION_CW);
-  setRightServoSpeed(tempRoverSpeed, SERVO_DIRECTION_CW);
-  
-}
-
-void roverRotateRight(int tempRoverSpeed)
-{
-  setLeftServoSpeed(tempRoverSpeed, SERVO_DIRECTION_CCW);
-  setRightServoSpeed(tempRoverSpeed, SERVO_DIRECTION_CCW);
-
-}
-void roverStop()
-{
-  setLeftServoSpeed(0, SERVO_DIRECTION_STOP);
-  setRightServoSpeed(0, SERVO_DIRECTION_STOP);
-}
-
 
