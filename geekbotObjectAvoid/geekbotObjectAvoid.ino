@@ -102,7 +102,16 @@ void setup()
   digitalWrite(BUZZER_PIN, HIGH);
   delay(250);
   digitalWrite(BUZZER_PIN, LOW);
+  
+  while(digitalRead() ==LOW)
+  {
+    //do nothing until the button is pressed
+  }
+
   roverForward(3);
+
+
+
 }
 
 void loop()
