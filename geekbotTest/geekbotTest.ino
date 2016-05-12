@@ -115,9 +115,9 @@ void setup()
   
   
   Serial.println("Testing Pan Servo");
-  servoPan.writeMicroseconds(2000);
+  servoPan.writeMicroseconds(2400);
   delay(1000);
-  servoPan.writeMicroseconds(1000);
+  servoPan.writeMicroseconds(600);
   delay(1000);
   servoPan.writeMicroseconds(1500);
   delay(1000);
