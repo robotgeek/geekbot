@@ -1,3 +1,12 @@
+#define LED_LEFT 7
+#define LED_RIGHT 4
+unsigned long last_led_blink = millis();
+unsigned long led_flash_delay = 100; //time in milliseconds for LED flashing
+int led_blinks_left = 0;
+int led_blinks_right = 0;
+bool led_state_left = false;
+bool led_state_right = false;
+
 void flashLEDs( int numTimes, int flashDelay )
 {
   while ( --numTimes >= 0 )

@@ -29,17 +29,17 @@ unsigned long ticksTraveledLeft = 0; //total ticks traveled per command
 unsigned long ticksTraveledRight = 0;
 
 #define WheelRadius 0.05 //meters (50 millimeters)
-const float meters_per_revolution = 2.0 * PI * WheelRadius; //Wheel circumference for distance traveled
+const double meters_per_revolution = 2.0 * PI * WheelRadius; //Wheel circumference for distance traveled
 
 #define WheelSpacing 0.195 //meters (195 millimeters)
-const float wheel_to_wheel_circumference = 2.0 * PI * ( WheelSpacing / 2.0 ); //Circumference for in-place rotation
-const float degrees_per_revolution = meters_per_revolution / wheel_to_wheel_circumference * 360;
+const double wheel_to_wheel_circumference = 2.0 * PI * ( WheelSpacing / 2.0 ); //Circumference for in-place rotation
+const double degrees_per_revolution = meters_per_revolution / wheel_to_wheel_circumference * 360;
 
-const float meters_per_tick = meters_per_revolution / encoderCounts_per_revolution;
-const float degrees_per_tick = degrees_per_revolution / encoderCounts_per_revolution;
+const double meters_per_tick = meters_per_revolution / encoderCounts_per_revolution;
+const double degrees_per_tick = degrees_per_revolution / encoderCounts_per_revolution;
 
-float wheelSpeedRight = 0.0; //Current wheel speed in revolutions/second
-float wheelSpeedLeft = 0.0;
+double wheelSpeedRight = 0.0; //Current wheel speed in revolutions/second
+double wheelSpeedLeft = 0.0;
 
 int driveDirection = 1; //Current driving direction for wheel speed correction
 
@@ -82,8 +82,8 @@ void processEncoders()
   {
     last_timestamp = millis();
 
-    wheelSpeedRight = (float)rightEncoderCount/(float)encoderCounts_per_revolution;
-    wheelSpeedLeft = (float)leftEncoderCount/(float)encoderCounts_per_revolution;
+    wheelSpeedRight = (double)rightEncoderCount/(double)encoderCounts_per_revolution;
+    wheelSpeedLeft = (double)leftEncoderCount/(double)encoderCounts_per_revolution;
     wheelSpeedRight *= 10.0; //Sampling at 2Hz but reporting speed at 1 Revolution/Second
     wheelSpeedLeft *= 10.0;
 
@@ -163,7 +163,7 @@ void driveStop()
   degreesTraveled = 0.0;
 }
 
-void driveForward( float meters )
+void driveForward( double meters )
 {
   servoSpeedLeft = CCW_MIN_SPEED;
   servoSpeedRight = CW_MIN_SPEED;
@@ -175,7 +175,7 @@ void driveForward( float meters )
   driveStop();
 }
 
-void driveReverse( float meters )
+void driveReverse( double meters )
 {
   servoSpeedLeft = CW_MIN_SPEED;
   servoSpeedRight = CCW_MIN_SPEED;
@@ -188,7 +188,7 @@ void driveReverse( float meters )
   driveStop();
 }
 
-void driveLeft( float p_degrees )
+void driveLeft( double p_degrees )
 {
   servoSpeedLeft = CW_MIN_SPEED;
   servoSpeedRight = CW_MIN_SPEED;
@@ -200,7 +200,7 @@ void driveLeft( float p_degrees )
   driveStop();
 }
 
-void driveRight( float p_degrees )
+void driveRight( double p_degrees )
 {
   servoSpeedLeft = CCW_MIN_SPEED;
   servoSpeedRight = CCW_MIN_SPEED;
@@ -212,7 +212,7 @@ void driveRight( float p_degrees )
   driveStop();
 }
 
-void wallFollowLeft( int p_distance, int p_meters )
+void wallFollowLeft( int p_distance, double p_meters )
 {
 #ifdef USB_DEBUG
   Serial.println( "Sensor looking left" );
@@ -246,7 +246,7 @@ void wallFollowLeft( int p_distance, int p_meters )
   driveStop();
 }
 
-void wallFollowLeftUntil( int p_distance, int p_stopRange )
+double wallFollowLeftUntil( int p_distance, int p_stopRange )
 {
 #ifdef USB_DEBUG
   Serial.println( "Sensor looking left" );
@@ -277,10 +277,12 @@ void wallFollowLeftUntil( int p_distance, int p_stopRange )
     setBlinksLeft( 2 );
     processLEDs();
   }
+  double total_distance = distanceTraveled;
   driveStop();
+  return total_distance;
 }
 
-void wallFollowRight( int p_distance, int p_meters )
+void wallFollowRight( int p_distance, double p_meters )
 {
 #ifdef USB_DEBUG
   Serial.println( "Sensor looking right" );
