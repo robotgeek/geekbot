@@ -11,9 +11,9 @@
  *    Left Servo - Digital Pin 10
  *    Right Servo - Digital Pin 11
  *    Buzzer - Digital Pin 12
- *    IR Receiver - Digital Pin 2
  *    Right LED - Digital Pin 4
  *    Left LED - Digital Pin 7
+ *    Push Switch - Digital Pin 5
  *
  *    Jumper for pins 9/10/11 should be set to 'VIN'
  *    Jumper for pins 3/5/6 should be set to '5V'
@@ -33,12 +33,12 @@
 #include <SharpIR.h>
 
 #ifdef USE_SWITCHINPUT
-#define SWITCH_PIN 4
+#define SWITCH_PIN 5
 #endif
 
 #ifdef USE_LEDS
-#define LED_LEFT 12
-#define LED_RIGHT 2
+#define LED_LEFT 7
+#define LED_RIGHT 4
 unsigned long last_led_blink = millis();
 unsigned long led_flash_delay = 100; //time in milliseconds for LED flashing
 int led_blinks_left = 0;
@@ -48,7 +48,7 @@ bool led_state_right = false;
 #endif
 
 #ifdef USE_BUZZER
-#define SPKR_PIN 3
+#define SPKR_PIN 12
 #include "sounds.h"
 #endif
 
@@ -92,11 +92,6 @@ void setup()
 
   servoSensor.attach( SENSOR_PAN_PIN );
   servoSensor.writeMicroseconds( IR_PAN_CENTER );
-  
-#ifdef USE_ULTRASONIC
-  pinMode(trigPin, OUTPUT);
-  pinMode(echoPin, INPUT);
-#endif
 
 #ifdef USB_DEBUG
   Serial.begin(38400);
