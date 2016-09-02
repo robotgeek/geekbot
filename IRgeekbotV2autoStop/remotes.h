@@ -1,8 +1,9 @@
-#define REMOTE_TYPE MINI_REMOTE_2
+#define REMOTE_TYPE MINI_CONTROLLER_A
 
 #define MINI_REMOTE_1 0001
 #define MINI_REMOTE_2 0002
 #define SONY_DVD 0003
+#define MINI_CONTROLLER_A 0004
 
 const unsigned long  REPEATING = 0xFFFFFFFF;
 
@@ -78,7 +79,15 @@ const unsigned long ZERO_BUTTON = 0x90B92;
 const unsigned long SPECIAL_1_BUTTON = 0xC81;
 const unsigned long SPECIAL_2_BUTTON = 0x481;
 
+#elif REMOTE_TYPE == MINI_CONTROLLER_A
 
+  // Mini Gamepad Controllers have an unsupported protocol. We will use hashDecode for these.
+const unsigned long MY_PROTOCOL = UNKNOWN;
+const unsigned long RIGHT_BUTTON = 0xA20D9947;
+const unsigned long LEFT_BUTTON = 0xBDC79D57;
+const unsigned long UP_BUTTON = 0xA7C63817;
+const unsigned long DOWN_BUTTON = 0xE75B5507;
+const unsigned long SELECT_BUTTON = 0xDE1CA6D7;
 
 #endif
 
