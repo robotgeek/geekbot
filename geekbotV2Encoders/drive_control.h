@@ -1,49 +1,54 @@
+#ifndef DRIVE_CONTROL
+#define DRIVE_CONTROL
+
+#include "panning_range_sensor.h"
+
 #define LEFT_SERVO_PIN 10
 #define RIGHT_SERVO_PIN 11
 #define LEFT_ENCODER_PIN 3
 #define RIGHT_ENCODER_PIN 4
 
-#include "panning_range_sensor.h"
+#define WheelRadius 0.05 //meters (50 millimeters)
+#define WheelSpacing 0.195 //meters (195 millimeters)
 
 Servo servoLeft, servoRight;      //wheel servo objects
 
-//Continous servo speed control
+//Constants
 const int CW_MIN_SPEED = 1380; //1400;    //servo pulse in microseconds for slowest clockwise speed
 const int CCW_MIN_SPEED = 1600;           //servo pulse in microseconds for slowest counter-clockwise speed
 const int SERVO_STOP = 1500;        //servo pulse in microseconds for stopped servo
-int servoSpeedLeft = SERVO_STOP;  //left servo speed
-int servoSpeedRight = SERVO_STOP; //right servo speed
-
 const int ENCODER_VALUE_THRESHOLD = 512; //ADC input value for high signal
 const int encoderCounts_per_revolution = 64; //Number of slices on wheel encoder
-bool rightEncoderRising = true; //state of encoder counting
-bool rightEncoderFalling = false;
-bool leftEncoderRising = true;
-bool leftEncoderFalling = false;
 
-int rightEncoderCount = 0; //number of encoder ticks per command
-int leftEncoderCount = 0;
-double degreesTraveled = 0.0; //total degrees of rotation per command
-double distanceTraveled = 0.0; //integrated velocity over time
-unsigned long ticksTraveledLeft = 0; //total ticks traveled per command
-unsigned long ticksTraveledRight = 0;
-
-#define WheelRadius 0.05 //meters (50 millimeters)
 const double meters_per_revolution = 2.0 * PI * WheelRadius; //Wheel circumference for distance traveled
 
-#define WheelSpacing 0.195 //meters (195 millimeters)
 const double wheel_to_wheel_circumference = 2.0 * PI * ( WheelSpacing / 2.0 ); //Circumference for in-place rotation
 const double degrees_per_revolution = meters_per_revolution / wheel_to_wheel_circumference * 360;
 
 const double meters_per_tick = meters_per_revolution / encoderCounts_per_revolution;
 const double degrees_per_tick = degrees_per_revolution / encoderCounts_per_revolution;
 
-double wheelSpeedRight = 0.0; //Current wheel speed in revolutions/second
-double wheelSpeedLeft = 0.0;
+int _servoSpeedLeft = SERVO_STOP;  //left servo speed
+int _servoSpeedRight = SERVO_STOP; //right servo speed
 
-int driveDirection = 1; //Current driving direction for wheel speed correction
+bool _rightEncoderRising = true;    //state of encoder counting
+bool _rightEncoderFalling = false;  //state of encoder counting
+bool _leftEncoderRising = true;     //state of encoder counting
+bool _leftEncoderFalling = false;   //state of encoder counting
 
-unsigned long last_timestamp = millis();
+int _rightEncoderCount = 0; //number of encoder ticks per command
+int _leftEncoderCount = 0; //number of encoder ticks per command
+double _degreesTraveled = 0.0; //total degrees of rotation per command
+double _distanceTraveled = 0.0; //integrated velocity over time
+unsigned long _ticksTraveledLeft = 0; //total ticks traveled per command
+unsigned long _ticksTraveledRight = 0; //total ticks traveled per command
+
+double _wheelSpeedRight = 0.0; //Current wheel speed in revolutions/second
+double _wheelSpeedLeft = 0.0;  //Current wheel speed in revolutions/second
+
+int _driveDirection = 1; //Current driving direction for wheel speed correction
+
+unsigned long _last_timestamp = millis();
 
 void processEncoders()
 {
@@ -51,125 +56,131 @@ void processEncoders()
   int leftEncoderValue = analogRead(LEFT_ENCODER_PIN);
 
   //Catch falling edge ( black stripe ) for right and left wheel speed encoders
-  if (rightEncoderFalling && rightEncoderValue < ENCODER_VALUE_THRESHOLD)
+  if (_rightEncoderFalling && rightEncoderValue < ENCODER_VALUE_THRESHOLD)
   {
-    ++rightEncoderCount;
-    rightEncoderRising = true;
-    rightEncoderFalling = false;
+    ++_rightEncoderCount;
+    _rightEncoderRising = true;
+    _rightEncoderFalling = false;
   }
-  if (leftEncoderFalling && leftEncoderValue < ENCODER_VALUE_THRESHOLD)
+  if (_leftEncoderFalling && leftEncoderValue < ENCODER_VALUE_THRESHOLD)
   {
-    ++leftEncoderCount; 
-    leftEncoderRising = true;
-    leftEncoderFalling = false;
+    ++_leftEncoderCount; 
+    _leftEncoderRising = true;
+    _leftEncoderFalling = false;
   }
 
   //Catch rising edge ( white stripe ) for right and left wheel speed encoders
-  if (rightEncoderRising && rightEncoderValue > ENCODER_VALUE_THRESHOLD) 
+  if (_rightEncoderRising && rightEncoderValue > ENCODER_VALUE_THRESHOLD) 
   {
-    ++rightEncoderCount;     
-    rightEncoderRising = false;
-    rightEncoderFalling = true;
+    ++_rightEncoderCount;     
+    _rightEncoderRising = false;
+    _rightEncoderFalling = true;
   } 
-  if (leftEncoderRising && leftEncoderValue > ENCODER_VALUE_THRESHOLD) 
+  if (_leftEncoderRising && leftEncoderValue > ENCODER_VALUE_THRESHOLD) 
   {
-    ++leftEncoderCount;     
-    leftEncoderRising = false;
-    leftEncoderFalling = true;
+    ++_leftEncoderCount;     
+    _leftEncoderRising = false;
+    _leftEncoderFalling = true;
   }
   
-  if ( last_timestamp + 100ul < millis() )
+  if ( _last_timestamp + 100ul < millis() )
   {
-    last_timestamp = millis();
+    _last_timestamp = millis();
 
-    wheelSpeedRight = (double)rightEncoderCount/(double)encoderCounts_per_revolution;
-    wheelSpeedLeft = (double)leftEncoderCount/(double)encoderCounts_per_revolution;
-    wheelSpeedRight *= 10.0; //Sampling at 2Hz but reporting speed at 1 Revolution/Second
-    wheelSpeedLeft *= 10.0;
+    _wheelSpeedRight = (double)_rightEncoderCount/(double)encoderCounts_per_revolution;
+    _wheelSpeedLeft = (double)_leftEncoderCount/(double)encoderCounts_per_revolution;
+    _wheelSpeedRight *= 10.0; //Sampling at 10Hz but reporting speed at 1 Revolution/Second
+    _wheelSpeedLeft *= 10.0;
 
 #ifdef USB_DEBUG
     Serial.print("Ticks L:");
-    Serial.print(leftEncoderCount);
+    Serial.print(_leftEncoderCount);
     Serial.print(" R:");
-    Serial.print(rightEncoderCount);
+    Serial.print(_rightEncoderCount);
     Serial.print(" RPS L:");
-    Serial.print(wheelSpeedLeft);
+    Serial.print(_wheelSpeedLeft);
     Serial.print(" R:");
-    Serial.print(wheelSpeedRight);
+    Serial.print(_wheelSpeedRight);
 #endif
 
     //Wheel speed compensation
-    if ( driveDirection < 2 ) //Only compensate for FWD and REV ( +1, -1 )
+    if ( _driveDirection != 0 ) //Only compensate for FWD and REV ( +1, -1 )
     {
-      if ( leftEncoderCount - rightEncoderCount > 1 )
+      if ( _leftEncoderCount - _rightEncoderCount > 1 )
       {
-        servoSpeedLeft += driveDirection * 3;
-        servoSpeedRight -= driveDirection * 3;
+        _servoSpeedLeft += _driveDirection * 3;
+        _servoSpeedRight -= _driveDirection * 3;
       }
-      else if ( rightEncoderCount - leftEncoderCount > 1 )
+      else if ( _rightEncoderCount - _leftEncoderCount > 1 )
       {
-        servoSpeedLeft -= driveDirection * 3;
-        servoSpeedRight += driveDirection * 3;
+        _servoSpeedLeft -= _driveDirection * 3;
+        _servoSpeedRight += _driveDirection * 3;
       }
     }
 #ifdef USB_DEBUG
     Serial.print( " PWM L: " );
-    Serial.print( servoSpeedLeft );
+    Serial.print( _servoSpeedLeft );
 
     Serial.print( " R: " );
-    Serial.print( servoSpeedRight );
+    Serial.print( _servoSpeedRight );
 
     Serial.print( " Range: " );
     Serial.println( irsensorValue );
 #endif
     
-    ticksTraveledLeft += leftEncoderCount;
-    ticksTraveledRight += rightEncoderCount;
+    _ticksTraveledLeft += _leftEncoderCount;
+    _ticksTraveledRight += _rightEncoderCount;
     
-    distanceTraveled += (leftEncoderCount + rightEncoderCount)/2.0 * meters_per_tick;
-    degreesTraveled += (leftEncoderCount + rightEncoderCount)/2.0 * degrees_per_tick;
+    _distanceTraveled += (_leftEncoderCount + _rightEncoderCount)/2.0 * meters_per_tick;
+    _degreesTraveled += (_leftEncoderCount + _rightEncoderCount)/2.0 * degrees_per_tick;
     
-    rightEncoderCount = 0;
-    leftEncoderCount = 0;
+    _rightEncoderCount = 0;
+    _leftEncoderCount = 0;
   }
 
-  servoLeft.writeMicroseconds( servoSpeedLeft );
-  servoRight.writeMicroseconds( servoSpeedRight );
+  servoLeft.writeMicroseconds( _servoSpeedLeft );
+  servoRight.writeMicroseconds( _servoSpeedRight );
 }
 
-void driveStop()
+double driveStop()
 {
-  servoSpeedLeft = SERVO_STOP;
-  servoSpeedRight = SERVO_STOP;
-  servoLeft.writeMicroseconds( servoSpeedLeft );
-  servoRight.writeMicroseconds( servoSpeedRight );
+  double total_distance_traveled = 0.0;
+  
+  _servoSpeedLeft = SERVO_STOP;
+  _servoSpeedRight = SERVO_STOP;
+  servoLeft.writeMicroseconds( _servoSpeedLeft );
+  servoRight.writeMicroseconds( _servoSpeedRight );
   
 #ifdef USB_DEBUG
   Serial.print( "Distance Traveled: " );
-  Serial.print( distanceTraveled );
+  Serial.print( _distanceTraveled );
   Serial.print( " Ticks Traveled: " );
-  Serial.print( ticksTraveledLeft );
+  Serial.print( _ticksTraveledLeft );
   Serial.print( " Degrees Traveled: " );
-  Serial.println( degreesTraveled );
+  Serial.println( _degreesTraveled );
 #endif
 
 #ifdef USE_LEDS
   flashLEDs( 3, 250 );
 #endif
 
-  ticksTraveledLeft = 0;
-  ticksTraveledRight = 0;
-  distanceTraveled = 0.0;
-  degreesTraveled = 0.0;
+  total_distance_traveled = _distanceTraveled;
+  
+  _ticksTraveledLeft = 0;
+  _ticksTraveledRight = 0;
+  _distanceTraveled = 0.0;
+  _degreesTraveled = 0.0;
+
+  return total_distance_traveled;
 }
 
 void driveForward( double meters )
 {
-  servoSpeedLeft = CCW_MIN_SPEED;
-  servoSpeedRight = CW_MIN_SPEED;
-  while ( distanceTraveled < meters )
+  _servoSpeedLeft = CCW_MIN_SPEED;
+  _servoSpeedRight = CW_MIN_SPEED;
+  _driveDirection = 1;
+  while ( _distanceTraveled < meters )
   {
-    driveDirection = 1;
     processEncoders();
   }
   driveStop();
@@ -177,12 +188,11 @@ void driveForward( double meters )
 
 void driveReverse( double meters )
 {
-  servoSpeedLeft = CW_MIN_SPEED;
-  servoSpeedRight = CCW_MIN_SPEED;
-  
-  while ( distanceTraveled < meters )
+  _servoSpeedLeft = CW_MIN_SPEED;
+  _servoSpeedRight = CCW_MIN_SPEED;
+  _driveDirection = -1;
+  while ( _distanceTraveled < meters )
   {
-    driveDirection = -1;
     processEncoders();
   }
   driveStop();
@@ -190,11 +200,11 @@ void driveReverse( double meters )
 
 void driveLeft( double p_degrees )
 {
-  servoSpeedLeft = CW_MIN_SPEED;
-  servoSpeedRight = CW_MIN_SPEED;
-  while ( degreesTraveled < p_degrees )
+  _servoSpeedLeft = CW_MIN_SPEED;
+  _servoSpeedRight = CW_MIN_SPEED;
+  _driveDirection = 0;
+  while ( _degreesTraveled < p_degrees )
   {
-    driveDirection = 2;
     processEncoders();
   }
   driveStop();
@@ -202,43 +212,54 @@ void driveLeft( double p_degrees )
 
 void driveRight( double p_degrees )
 {
-  servoSpeedLeft = CCW_MIN_SPEED;
-  servoSpeedRight = CCW_MIN_SPEED;
-  while ( degreesTraveled < p_degrees )
+  _servoSpeedLeft = CCW_MIN_SPEED;
+  _servoSpeedRight = CCW_MIN_SPEED;
+  _driveDirection = 0;
+  while ( _degreesTraveled < p_degrees )
   { 
-    driveDirection = 2;
     processEncoders();
   }
   driveStop();
 }
 
+double driveForwardToDistance( double meter_limit, int p_stopRange )
+{
+  _servoSpeedLeft = CCW_MIN_SPEED;
+  _servoSpeedRight = CW_MIN_SPEED;
+  _driveDirection = 1;
+  
+  lookForward();
+  processDistanceSensor();
+  while ( _distanceTraveled < meter_limit && irsensorValue > p_stopRange )
+  {
+    processDistanceSensor();
+    processEncoders();
+  }
+  return driveStop();
+}
+
 void wallFollowLeft( int p_distance, double p_meters )
 {
-#ifdef USB_DEBUG
-  Serial.println( "Sensor looking left" );
-#endif
+  _servoSpeedLeft = CCW_MIN_SPEED;
+  _servoSpeedRight = CW_MIN_SPEED;
+  _driveDirection = 1;
 
-  servoSensor.writeMicroseconds( IR_PAN_LEFT );
-  delay(IR_PAN_DELAY); //delay so we have time to look left before sampling sensor
-
-  servoSpeedLeft = CCW_MIN_SPEED;
-  servoSpeedRight = CW_MIN_SPEED;
+  lookLeft();
   
-  while ( distanceTraveled < p_meters )
+  while ( _distanceTraveled < p_meters )
   {
     processDistanceSensor();
     if ( irsensorValue > p_distance )
     {
-      servoSpeedLeft = CCW_MIN_SPEED - DISTANCE_TURN_GAIN;
-      servoSpeedRight = CW_MIN_SPEED;
+      _servoSpeedLeft = CCW_MIN_SPEED - DISTANCE_TURN_GAIN;
+      _servoSpeedRight = CW_MIN_SPEED;
     }
     else
     {
-      servoSpeedRight = CW_MIN_SPEED + DISTANCE_TURN_GAIN;
-      servoSpeedLeft = CCW_MIN_SPEED;
+      _servoSpeedRight = CW_MIN_SPEED + DISTANCE_TURN_GAIN;
+      _servoSpeedLeft = CCW_MIN_SPEED;
     }
-    
-    driveDirection = 1;
+
     processEncoders();
     setBlinksLeft( 2 );
     processLEDs();
@@ -248,67 +269,57 @@ void wallFollowLeft( int p_distance, double p_meters )
 
 double wallFollowLeftUntil( int p_distance, int p_stopRange )
 {
-#ifdef USB_DEBUG
-  Serial.println( "Sensor looking left" );
-#endif
+  _servoSpeedLeft = CCW_MIN_SPEED;
+  _servoSpeedRight = CW_MIN_SPEED;
+  _driveDirection = 1;
 
-  servoSensor.writeMicroseconds( IR_PAN_LEFT );
-  delay(IR_PAN_DELAY); //delay so we have time to look left before sampling sensor
-
-  servoSpeedLeft = CCW_MIN_SPEED;
-  servoSpeedRight = CW_MIN_SPEED;
+  lookLeft();
   processDistanceSensor();
+  
   while ( irsensorValue < p_stopRange )
   {
     processDistanceSensor();
     if ( irsensorValue > p_distance )
     {
-      servoSpeedLeft = CCW_MIN_SPEED - DISTANCE_TURN_GAIN;
-      servoSpeedRight = CW_MIN_SPEED;
+      _servoSpeedLeft = CCW_MIN_SPEED - DISTANCE_TURN_GAIN;
+      _servoSpeedRight = CW_MIN_SPEED;
     }
     else
     {
-      servoSpeedRight = CW_MIN_SPEED + DISTANCE_TURN_GAIN;
-      servoSpeedLeft = CCW_MIN_SPEED;
+      _servoSpeedRight = CW_MIN_SPEED + DISTANCE_TURN_GAIN;
+      _servoSpeedLeft = CCW_MIN_SPEED;
     }
-    
-    driveDirection = 1;
+
     processEncoders();
     setBlinksLeft( 2 );
     processLEDs();
   }
-  double total_distance = distanceTraveled;
-  driveStop();
-  return total_distance;
+
+  return driveStop();
 }
 
 void wallFollowRight( int p_distance, double p_meters )
 {
-#ifdef USB_DEBUG
-  Serial.println( "Sensor looking right" );
-#endif
+  _servoSpeedLeft = CCW_MIN_SPEED;
+  _servoSpeedRight = CW_MIN_SPEED;
+  _driveDirection = 1;
 
-  servoSensor.writeMicroseconds( IR_PAN_RIGHT );
-  delay(IR_PAN_DELAY); //delay so we have time to look left before sampling sensor
-
-  servoSpeedLeft = CCW_MIN_SPEED;
-  servoSpeedRight = CW_MIN_SPEED;
+  lookRight();
   
-  while ( distanceTraveled < p_meters )
+  while ( _distanceTraveled < p_meters )
   {
     processDistanceSensor();
     if ( irsensorValue > p_distance )
     {
-      servoSpeedLeft = CCW_MIN_SPEED;
-      servoSpeedRight = CW_MIN_SPEED + DISTANCE_TURN_GAIN;
+      _servoSpeedLeft = CCW_MIN_SPEED;
+      _servoSpeedRight = CW_MIN_SPEED + DISTANCE_TURN_GAIN;
     }
     else
     {
-      servoSpeedRight = CW_MIN_SPEED;
-      servoSpeedLeft = CCW_MIN_SPEED - DISTANCE_TURN_GAIN;
+      _servoSpeedRight = CW_MIN_SPEED;
+      _servoSpeedLeft = CCW_MIN_SPEED - DISTANCE_TURN_GAIN;
     }
-    
-    driveDirection = 1;
+
     processEncoders();
     setBlinksRight( 2 );
     processLEDs();
@@ -316,36 +327,35 @@ void wallFollowRight( int p_distance, double p_meters )
   driveStop();
 }
 
-void wallFollowRightUntil( int p_distance, int p_stopRange )
+double wallFollowRightUntil( int p_distance, int p_stopRange )
 {
-#ifdef USB_DEBUG
-  Serial.println( "Sensor looking right" );
-#endif
+  _servoSpeedLeft = CCW_MIN_SPEED;
+  _servoSpeedRight = CW_MIN_SPEED;
+  _driveDirection = 1;
 
-  servoSensor.writeMicroseconds( IR_PAN_RIGHT );
-  delay(IR_PAN_DELAY); //delay so we have time to look left before sampling sensor
-
-  servoSpeedLeft = CCW_MIN_SPEED;
-  servoSpeedRight = CW_MIN_SPEED;
+  lookRight();
   processDistanceSensor();
+  
   while ( irsensorValue < p_stopRange )
   {
     processDistanceSensor();
     if ( irsensorValue > p_distance )
     {
-      servoSpeedLeft = CCW_MIN_SPEED;
-      servoSpeedRight = CW_MIN_SPEED + DISTANCE_TURN_GAIN;
+      _servoSpeedLeft = CCW_MIN_SPEED;
+      _servoSpeedRight = CW_MIN_SPEED + DISTANCE_TURN_GAIN;
     }
     else
     {
-      servoSpeedRight = CW_MIN_SPEED;
-      servoSpeedLeft = CCW_MIN_SPEED - DISTANCE_TURN_GAIN;
+      _servoSpeedRight = CW_MIN_SPEED;
+      _servoSpeedLeft = CCW_MIN_SPEED - DISTANCE_TURN_GAIN;
     }
-    
-    driveDirection = 1;
+
     processEncoders();
     setBlinksRight( 2 );
     processLEDs();
   }
-  driveStop();
+
+  return driveStop();
 }
+
+#endif //--DRIVE_CONTROL

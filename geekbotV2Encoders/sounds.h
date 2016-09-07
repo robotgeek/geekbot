@@ -1,3 +1,8 @@
+#ifndef SOUNDS
+#define SOUNDS
+
+#define SPKR_PIN 12
+
 // Reference:  This list was adapted from the table located here:
 //     http://www.phy.mtu.edu/~suits/notefreqs.html
 const float  note_C0 = 16.35;  //C0
@@ -276,3 +281,5 @@ void playSound( int soundid )
     break;
   }
 }
+
+#endif //--SOUNDS

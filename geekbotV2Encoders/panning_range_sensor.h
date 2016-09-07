@@ -1,19 +1,24 @@
-/******************************\
- * IR sensor on panning servo *
-\******************************/
-#define DISTANCE_TURN_GAIN 9 //TODO: was high at 10 //8 was kinda low
+#ifndef PANNING_RANGE_SENSOR
+#define PANNING_RANGE_SENSOR
 
 const int SENSOR_PAN_PIN = 6;
 const int DISTANCE_SENSOR_PIN = 5;
+const int DISTANCE_TURN_GAIN = 9;
+
 const int IRMODEL = 1080;
-SharpIR sharp(DISTANCE_SENSOR_PIN, 25, 93, IRMODEL );
-int irsensorValue;
+
 const int IR_PAN_DELAY = 1000; //milliseconds to wait for position change to occur
+
 const int IR_PAN_CENTER = 1500;
-const int IR_PAN_LEFT = 2300; //2300;
-const int IR_PAN_RIGHT = 650; //544;
+const int IR_PAN_LEFT = 2300;
+const int IR_PAN_RIGHT = 650;
+
+unsigned long _last_distance_timestamp = millis();
+
+int irsensorValue;
+
+SharpIR sharp(DISTANCE_SENSOR_PIN, 25, 93, IRMODEL );
 Servo servoSensor;
-unsigned long last_distance_timestamp = millis();
 
 int getCurrentDistance()
 {
@@ -27,13 +32,17 @@ int getCurrentDistance()
 }
 void processDistanceSensor()
 {
-  if ( last_distance_timestamp + 100ul < millis() )
+  if ( _last_distance_timestamp + 100ul < millis() )
   {
-    last_distance_timestamp = millis();
+    _last_distance_timestamp = millis();
     irsensorValue = getCurrentDistance();
   }  
 }
-
+void lookForward()
+{
+  servoSensor.writeMicroseconds( IR_PAN_CENTER );
+  delay(IR_PAN_DELAY); //delay so we have time to look before sampling sensor
+}
 void lookLeft()
 {
   servoSensor.writeMicroseconds( IR_PAN_LEFT );
@@ -44,3 +53,5 @@ void lookRight()
   servoSensor.writeMicroseconds( IR_PAN_RIGHT );
   delay(IR_PAN_DELAY); //delay so we have time to look before sampling sensor
 }
+
+#endif //--PANNING_RANGE_SENSOR

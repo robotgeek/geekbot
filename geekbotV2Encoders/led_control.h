@@ -1,3 +1,6 @@
+#ifndef LED_CONTROL
+#define LED_CONTROL
+
 #define LED_LEFT 7
 #define LED_RIGHT 4
 unsigned long last_led_blink = millis();
@@ -56,3 +59,5 @@ void processLEDs()
     }
   }
 }
+
+#endif //--LED_CONTROL

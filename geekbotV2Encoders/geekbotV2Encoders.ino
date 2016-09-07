@@ -11,10 +11,12 @@
  *    Left Servo - Digital Pin 10
  *    Right Servo - Digital Pin 11
  *    Buzzer - Digital Pin 12
- *    Right LED - Digital Pin 4
  *    Left LED - Digital Pin 7
- *    Push Switch - Digital Pin 5 //TODO: Validate
- *
+ *    Right LED - Digital Pin 4
+ *    Push Switch - Digital Pin 5
+ *    Left IR Encoder - Analog Pin 3
+ *    Right IR Encoder - Analog Pin 4
+ *    
  *    Jumper for pins 9/10/11 should be set to 'VIN'
  *    Jumper for pins 3/5/6 should be set to '5V'
  *
@@ -24,23 +26,32 @@
  *
  ***********************************************************************************/
 
-#include <Servo.h>     //include servo library to control continous turn servos
-#include <SharpIR.h>
-
 #define USB_DEBUG //Enables serial.print() statements
 
-#define SWITCH_PIN 5
-#define SPKR_PIN 12
+#include <Servo.h>     //include servo library to control continous turn servos
+#include <SharpIR.h>
 
 #include "sounds.h"
 #include "led_control.h"
 #include "drive_control.h"
 
-void waitForHumanInput()
+#define SWITCH_PIN 5
+
+void waitForButtonPress()
 {
   playSound(WHISTLE);
 
   while ( digitalRead( SWITCH_PIN ) == LOW )
+  {
+    flashLEDs( 2, 50 );
+  }
+}
+
+void waitForButtonRelease()
+{
+  playSound(WHISTLE);
+
+  while ( digitalRead( SWITCH_PIN ) == HIGH )
   {
     flashLEDs( 2, 50 );
   }
@@ -78,8 +89,8 @@ void setup()
 
   pinMode( SWITCH_PIN, INPUT );
 
-  last_timestamp = millis();
-  last_distance_timestamp = millis();
+  _last_timestamp = millis();
+  _last_distance_timestamp = millis();
 }
 
 void loop() 
@@ -112,12 +123,29 @@ void loop()
   playSound(BEEPS); delay(500);
 */
 
-  /* Basic: Press button and robot will run-away, whistling for you to press it's button again
+  /* Room to room demo */
+  playSound(BEEPS);
+  delay(1000);
+  waitForButtonPress();
+  driveForwardToDistance( 1.25, 40 ); //Exit room until wall is 40cm, max distance 1.25 meters
+  driveLeft( 90.0 );
+  lookRight();
+  wallFollowRightUntil( getCurrentDistance(), getCurrentDistance()*2 ); //Follow wall
+  driveLeft( 90.0 );
+  driveForward( 1.0 );
+  waitForButtonRelease();
+  delay(500);
+  playSound(LAUGH);
+
+  program_finished();
+  
+  /* Basic: Press button and robot will drive away, whistling for you to press it's button again
   playSound(BEEPS);
   delay(1000);
   while(1)
   {
-    waitForHumanInput(); 
+    waitForButtonPress();
+    lookForward();
     driveForward( 1.0 );
     lookRight();
     driveRight( 180.0 );
@@ -125,13 +153,13 @@ void loop()
   }
   */
 
-  /* Intermediate: Follow wall on left until it ends, robot will wait for input, then return home */
+  /* Intermediate: Follow wall on left until it ends, robot will wait for input, then return home
   double meters_traveled = 0;
   int sampled_wall_distance = 0;
 
   lookLeft();
   
-  waitForHumanInput(); //Pause program until button is pressed
+  waitForButtonPress(); //Pause program until button is pressed
   
   sampled_wall_distance = getCurrentDistance(); //Get current distance for wall following
   
@@ -139,7 +167,7 @@ void loop()
   meters_traveled = wallFollowLeftUntil( sampled_wall_distance, sampled_wall_distance*2 ); //Follow wall
 
   playSound(LAUGH);
-  waitForHumanInput(); //Pause program until button is pressed
+  waitForButtonPress(); //Pause program until button is pressed
   delay(250); //Give person time to back away after pressing button
 
   lookRight();
@@ -155,6 +183,7 @@ void loop()
   playSound(LAUGH);
   
   program_finished();
+  */
   
   /* Advanced: Travel around square object, wait for input.. return to other side
   {
@@ -164,7 +193,7 @@ void loop()
     
     lookRight();
   
-    waitForHumanInput(); //Pause program until button is pressed
+    waitForButtonPress(); //Pause program until button is pressed
   
     sampled_wall_distance = getCurrentDistance(); //Get current distance for wall following
     //long distance
@@ -185,7 +214,7 @@ void loop()
     wallFollowRight( sampled_wall_distance, 1.0 );
   
     //wait for pickup
-    waitForHumanInput();
+    waitForButtonPress();
   
     lookLeft();
   
@@ -209,7 +238,7 @@ void loop()
     sampled_wall_distance = getCurrentDistance(); //Get current distance for wall following 
     wallFollowLeft( sampled_wall_distance, 2.0 );
   
-    waitForHumanInput();
+    waitForButtonPress();
   }
   */
 }
