@@ -1,7 +1,18 @@
-#ifndef SOUNDS
-#define SOUNDS
+#ifndef SOUNDS_H
+#define SOUNDS_H
 
 #define SPKR_PIN 12
+
+enum SoundIDs
+{
+  UP,
+  DOWN,
+  WHISTLE,
+  LAUGH,
+  OHH,
+  UHOH,
+  BEEPS
+};
 
 // Reference:  This list was adapted from the table located here:
 //     http://www.phy.mtu.edu/~suits/notefreqs.html
@@ -121,16 +132,6 @@ void beep(float noteFrequency, long noteDuration)
     delayMicroseconds(microsecondsPerWave); 
   } 
 }
-enum SoundIDs
-{
-  UP,
-  DOWN,
-  WHISTLE,
-  LAUGH,
-  OHH,
-  UHOH,
-  BEEPS
-};
 
 void sound_up() 
 {    
@@ -282,4 +283,4 @@ void playSound( int soundid )
   }
 }
 
-#endif //--SOUNDS
+#endif //--SOUNDS_H

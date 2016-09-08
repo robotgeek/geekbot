@@ -1,5 +1,5 @@
-#ifndef PANNING_RANGE_SENSOR
-#define PANNING_RANGE_SENSOR
+#ifndef PANNING_RANGE_SENSOR_H
+#define PANNING_RANGE_SENSOR_H
 
 const int SENSOR_PAN_PIN = 6;
 const int DISTANCE_SENSOR_PIN = 5;
@@ -38,6 +38,11 @@ void processDistanceSensor()
     irsensorValue = getCurrentDistance();
   }  
 }
+void lookCustom( int microseconds )
+{
+  servoSensor.writeMicroseconds( microseconds );
+  delay(IR_PAN_DELAY); //delay so we have time to look before moving on
+}
 void lookForward()
 {
   servoSensor.writeMicroseconds( IR_PAN_CENTER );
@@ -54,4 +59,4 @@ void lookRight()
   delay(IR_PAN_DELAY); //delay so we have time to look before sampling sensor
 }
 
-#endif //--PANNING_RANGE_SENSOR
+#endif //--PANNING_RANGE_SENSOR_H

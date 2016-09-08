@@ -26,7 +26,7 @@
  *
  ***********************************************************************************/
 
-#define USB_DEBUG //Enables serial.print() statements
+//#define USB_DEBUG //Enables serial.print() statements
 
 #include <Servo.h>     //include servo library to control continous turn servos
 #include <SharpIR.h>
@@ -99,146 +99,68 @@ void loop()
    * Create your own program by utilizing
    * the following drive functions:
    * 
-   * driveForward( distance )
-   * driveReverse( distance )
+   * Drive( distance_in_meters )
+   *    Positive distance_in_meters forward movement
+   *    Negative distance_in_meters reverse movement
+   *    
+   * Drive( distance_in_meters, stop_trigger_range )
+   *    Positive distance_in_meters = limit forward movement to distance
+   *    Negative distance_in_meters = limit reverse movement to distance
+   *    Zero distance_in_meters = unlimited forward movement
+   *    
+   *    Positive stop_trigger_range = Stop movement when IR range exceedes value
+   *    Negative stop_trigger_range = Stop movement when IR range is under value
+   *    
+   * Drive( distance_in_meters, stop_trigger_range, look_direction )
+   *    Positive distance_in_meters = limit forward movement to distance
+   *    Negative distance_in_meters = limit reverse movement to distance
+   *    Zero distance_in_meters = unlimited forward movement
+   *    
+   *    Positive stop_trigger_range = Stop movement when IR range exceedes value
+   *    Negative stop_trigger_range = Stop movement when IR range is under value
+   *    
+   *    look_direction is the IR servo value in microseconds. Provided values:
+   *        IR_PAN_CENTER
+   *        IR_PAN_LEFT
+   *        IR_PAN_RIGHT
+   *    
+   * Rotate( distance_in_degrees )
+   *    Positive distance_in_degrees = Clockwise rotation
+   *    Negative distance_in_degrees = Counter-clockwise rotation
+   *    
+   * WallFollow( which_wall, distance_in_meters, wall_range )
+   *    which_wall can be either WALL_LEFT or WALL_RIGHT
+   *    
+   *    Positive distance_in_meters = limit forward movement to distance
+   *    
+   *    wall_range is the IR range to the wall in centimeters that the robot will attempt to follow
+   *   
+   * WallFollow( which_wall, distance_in_meters, wall_range, stop_trigger_range )
+   *    which_wall can be either WALL_LEFT or WALL_RIGHT
+   *    
+   *    Positive distance_in_meters = limit forward movement to distance
+   *    Zero distance_in_meters = unlimited forward movement
+   *    
+   *    wall_range is the IR range to the wall in centimeters that the robot will attempt to follow
+   *      
+   *    Positive stop_trigger_range = Stop movement when IR range exceedes value
+   *    Negative stop_trigger_range = Stop movement when IR range is under value
+   *
+   * IRread()
+   *    Returns integer value representing the IR range in centimeters
+   *    
+   * waitForButtonPress()
+   * waitForButtonRelease()
    * 
-   * driveLeft( degrees )
-   * driveRight( degrees )
-   * 
-   * wallFollowLeft( wall_distance, travel_distance )
-   * wallFollowRight( wall_distance, travel_distance )
-   * 
-   * wallFollowLeftUntil( wall_distance, stop_distance )
-   * wallFollowRightUntil( wall_distance, stop_distance )
+   * playSound( SoundID )
    * 
   \******************************************************/
-
-/*  BUZZER TESTS 
-  playSound(UP); delay(500);
-  playSound(DOWN); delay(500);
-  playSound(WHISTLE); delay(500);
-  playSound(LAUGH); delay(500);
-  playSound(OHH); delay(500);
-  playSound(UHOH); delay(500);
-  playSound(BEEPS); delay(500);
-*/
-
-  /* Room to room demo */
+ 
   playSound(BEEPS);
-  delay(1000);
-  waitForButtonPress();
-  driveForwardToDistance( 1.25, 40 ); //Exit room until wall is 40cm, max distance 1.25 meters
-  driveLeft( 90.0 );
-  lookRight();
-  wallFollowRightUntil( getCurrentDistance(), getCurrentDistance()*2 ); //Follow wall
-  driveLeft( 90.0 );
-  driveForward( 1.0 );
-  waitForButtonRelease();
-  delay(500);
-  playSound(LAUGH);
-
-  program_finished();
-  
-  /* Basic: Press button and robot will drive away, whistling for you to press it's button again
-  playSound(BEEPS);
-  delay(1000);
-  while(1)
-  {
-    waitForButtonPress();
-    lookForward();
-    driveForward( 1.0 );
-    lookRight();
-    driveRight( 180.0 );
-    lookLeft();
-  }
-  */
-
-  /* Intermediate: Follow wall on left until it ends, robot will wait for input, then return home
-  double meters_traveled = 0;
-  int sampled_wall_distance = 0;
 
   lookLeft();
   
-  waitForButtonPress(); //Pause program until button is pressed
-  
-  sampled_wall_distance = getCurrentDistance(); //Get current distance for wall following
-  
-  playSound(BEEPS);   
-  meters_traveled = wallFollowLeftUntil( sampled_wall_distance, sampled_wall_distance*2 ); //Follow wall
+  waitForButtonPress();
 
-  playSound(LAUGH);
-  waitForButtonPress(); //Pause program until button is pressed
-  delay(250); //Give person time to back away after pressing button
-
-  lookRight();
-  playSound(UP);
-  driveRight(180.0); //Turn around
-
-  sampled_wall_distance = getCurrentDistance(); //Get current distance for wall following
-  
-  playSound(BEEPS);
-  wallFollowRight( sampled_wall_distance, meters_traveled ); //Follow wall until we've reached the origin
-
-  driveLeft(180.0);
-  playSound(LAUGH);
-  
-  program_finished();
-  */
-  
-  /* Advanced: Travel around square object, wait for input.. return to other side
-  {
-    float corner_forward_distance = 0.45; //distance to travel forward when cornering 90 degrees
-    int sampled_wall_distance = 0;
-    playSound(BEEPS);
-    
-    lookRight();
-  
-    waitForButtonPress(); //Pause program until button is pressed
-  
-    sampled_wall_distance = getCurrentDistance(); //Get current distance for wall following
-    //long distance
-    wallFollowRightUntil( sampled_wall_distance, sampled_wall_distance * 2 );
-    driveForward( corner_forward_distance );
-    driveRight( 90.0 );
-    driveForward( 0.5 );
-    
-    //short distance
-    sampled_wall_distance = getCurrentDistance(); //Get current distance for wall following
-    wallFollowRightUntil( sampled_wall_distance, sampled_wall_distance * 2 );
-    driveForward( corner_forward_distance );
-    driveRight( 90.0 );
-    driveForward( corner_forward_distance );
-  
-    //final stretch to pickup
-    sampled_wall_distance = getCurrentDistance(); //Get current distance for wall following 
-    wallFollowRight( sampled_wall_distance, 1.0 );
-  
-    //wait for pickup
-    waitForButtonPress();
-  
-    lookLeft();
-  
-    driveLeft(180.0); //Turn around
-  
-    //long distance
-    sampled_wall_distance = getCurrentDistance(); //Get current distance for wall following 
-    wallFollowLeftUntil( sampled_wall_distance, irsensorValue * 2 );
-    driveForward( corner_forward_distance );
-    driveLeft( 90.0 );
-    driveForward( corner_forward_distance );
-  
-    //short distance
-    sampled_wall_distance = getCurrentDistance(); //Get current distance for wall following 
-    wallFollowLeftUntil( sampled_wall_distance, irsensorValue * 2 );
-    driveForward( corner_forward_distance );
-    driveLeft( 90.0 );
-    driveForward( corner_forward_distance );
-  
-    //Final stretch
-    sampled_wall_distance = getCurrentDistance(); //Get current distance for wall following 
-    wallFollowLeft( sampled_wall_distance, 2.0 );
-  
-    waitForButtonPress();
-  }
-  */
+  WallFollow( WALL_LEFT, 0.0, IRread(), -IRread()/2 );
 }

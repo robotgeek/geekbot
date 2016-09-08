@@ -1,5 +1,5 @@
-#ifndef DRIVE_CONTROL
-#define DRIVE_CONTROL
+#ifndef DRIVE_CONTROL_H
+#define DRIVE_CONTROL_H
 
 #include "panning_range_sensor.h"
 
@@ -160,9 +160,7 @@ double driveStop()
   Serial.println( _degreesTraveled );
 #endif
 
-#ifdef USE_LEDS
   flashLEDs( 3, 250 );
-#endif
 
   total_distance_traveled = _distanceTraveled;
   
@@ -174,7 +172,7 @@ double driveStop()
   return total_distance_traveled;
 }
 
-void driveForward( double meters )
+double driveForward( double meters )
 {
   _servoSpeedLeft = CCW_MIN_SPEED;
   _servoSpeedRight = CW_MIN_SPEED;
@@ -183,10 +181,10 @@ void driveForward( double meters )
   {
     processEncoders();
   }
-  driveStop();
+  return driveStop();
 }
 
-void driveReverse( double meters )
+double driveReverse( double meters )
 {
   _servoSpeedLeft = CW_MIN_SPEED;
   _servoSpeedRight = CCW_MIN_SPEED;
@@ -195,7 +193,7 @@ void driveReverse( double meters )
   {
     processEncoders();
   }
-  driveStop();
+  return driveStop();
 }
 
 void driveLeft( double p_degrees )
@@ -221,7 +219,7 @@ void driveRight( double p_degrees )
   }
   driveStop();
 }
-
+/*
 double driveForwardToDistance( double meter_limit, int p_stopRange )
 {
   _servoSpeedLeft = CCW_MIN_SPEED;
@@ -357,5 +355,312 @@ double wallFollowRightUntil( int p_distance, int p_stopRange )
 
   return driveStop();
 }
+*/
+/* NEW CODE - Requested 9-7-16 */
 
-#endif //--DRIVE_CONTROL
+double drive_helper_with_trigger( double meter_limit, int stopRange )
+{
+  processDistanceSensor();
+  if ( meter_limit == 0.0 ) //If there is no limit we drive until desired IR sensor reading is obtained
+  {
+    if ( stopRange > 0 ) //Positive stop range means we stop driving when the range goes over the distance
+    {
+      while ( irsensorValue > stopRange )
+      {
+        processDistanceSensor();
+        processEncoders();
+      }
+    }
+    else //Negative stop range means we stop driving when the range goes under the absolute value of the distance
+    {
+      while ( irsensorValue < abs(stopRange) )
+      {
+        processDistanceSensor();
+        processEncoders();
+      }
+    }
+  }
+  else //No distance limit. We drive until desired IR sensor reading is obtained
+  {
+    if ( stopRange > 0 ) //Positive stop range means we stop driving when the range goes over the distance
+    {
+      while ( _distanceTraveled < meter_limit && irsensorValue > stopRange )
+      {
+        processDistanceSensor();
+        processEncoders();
+      }
+    }
+    else //Negative stop range means we stop driving when the range goes under the absolute value of the distance
+    {
+      while ( _distanceTraveled < meter_limit && irsensorValue < abs(stopRange) )
+      {
+        processDistanceSensor();
+        processEncoders();
+      }
+    }
+  }
+  return driveStop();
+}
+
+double Drive( double distance_in_meters, int stop_trigger_ir_range = 0, int look_direction = 0 )
+{
+  if ( look_direction != 0 )
+  {
+    lookCustom( look_direction );
+  }
+  if ( stop_trigger_ir_range > 0 )
+  {
+    if ( distance_in_meters > 0.0 )
+    {
+      _servoSpeedLeft = CCW_MIN_SPEED;
+      _servoSpeedRight = CW_MIN_SPEED;
+      _driveDirection = 1;    
+      return drive_helper_with_trigger( distance_in_meters, stop_trigger_ir_range );
+    }
+    else
+    {
+      _servoSpeedLeft = CW_MIN_SPEED;
+      _servoSpeedRight = CCW_MIN_SPEED;
+      _driveDirection = -1;
+      return drive_helper_with_trigger( distance_in_meters, stop_trigger_ir_range );
+    }
+  }
+  else if ( distance_in_meters > 0.0 )
+  {
+    return driveForward( distance_in_meters );
+  }
+  else
+  {
+    return driveReverse( fabs( distance_in_meters ) );
+  }
+}
+
+void Rotate( double num_degrees )
+{
+  if ( num_degrees > 0.0 )
+  {
+    driveRight( num_degrees );
+  }
+  else
+  {
+    driveLeft( fabs(num_degrees) );
+  }
+}
+
+double wall_follow_left( double distance_in_meters, int wall_distance )
+{
+  _servoSpeedLeft = CCW_MIN_SPEED;
+  _servoSpeedRight = CW_MIN_SPEED;
+  _driveDirection = 1;
+
+  lookLeft();
+
+  while ( _distanceTraveled < distance_in_meters )
+  {
+    processDistanceSensor();
+    if ( irsensorValue > wall_distance )
+    {
+      _servoSpeedLeft = CCW_MIN_SPEED - DISTANCE_TURN_GAIN;
+      _servoSpeedRight = CW_MIN_SPEED;
+    }
+    else
+    {
+      _servoSpeedRight = CW_MIN_SPEED + DISTANCE_TURN_GAIN;
+      _servoSpeedLeft = CCW_MIN_SPEED;
+    }
+
+    processEncoders();
+    setBlinksLeft( 2 );
+    processLEDs();
+  }
+
+  return driveStop();
+}
+
+double wall_follow_right( double distance_in_meters, int wall_distance )
+{
+  _servoSpeedLeft = CCW_MIN_SPEED;
+  _servoSpeedRight = CW_MIN_SPEED;
+  _driveDirection = 1;
+
+  lookRight();
+  
+  while ( _distanceTraveled < distance_in_meters )
+  {
+    processDistanceSensor();
+    if ( irsensorValue > wall_distance )
+    {
+      _servoSpeedLeft = CCW_MIN_SPEED;
+      _servoSpeedRight = CW_MIN_SPEED + DISTANCE_TURN_GAIN;
+    }
+    else
+    {
+      _servoSpeedRight = CW_MIN_SPEED;
+      _servoSpeedLeft = CCW_MIN_SPEED - DISTANCE_TURN_GAIN;
+    }
+
+    processEncoders();
+    setBlinksRight( 2 );
+    processLEDs();
+  }
+  
+  return driveStop();
+}
+
+double wall_follow_left_trigger_helper( double distance_in_meters, int wall_range, int stop_trigger_ir_range )
+{
+  _servoSpeedLeft = CCW_MIN_SPEED;
+  _servoSpeedRight = CW_MIN_SPEED;
+  _driveDirection = 1;
+
+  lookLeft();
+  processDistanceSensor();
+
+  if ( stop_trigger_ir_range > 0 )
+  {
+    while ( irsensorValue < stop_trigger_ir_range )
+    {
+      processDistanceSensor();
+      if ( irsensorValue > wall_range )
+      {
+        _servoSpeedLeft = CCW_MIN_SPEED - DISTANCE_TURN_GAIN;
+        _servoSpeedRight = CW_MIN_SPEED;
+      }
+      else
+      {
+        _servoSpeedRight = CW_MIN_SPEED + DISTANCE_TURN_GAIN;
+        _servoSpeedLeft = CCW_MIN_SPEED;
+      }
+  
+      processEncoders();
+      setBlinksLeft( 2 );
+      processLEDs();
+  
+      if ( distance_in_meters != 0.0 && _distanceTraveled > distance_in_meters )
+      {
+        break;
+      }
+    }
+  }
+  else
+  {
+    while ( irsensorValue > abs(stop_trigger_ir_range) )
+    {
+      processDistanceSensor();
+      if ( irsensorValue > wall_range )
+      {
+        _servoSpeedLeft = CCW_MIN_SPEED - DISTANCE_TURN_GAIN;
+        _servoSpeedRight = CW_MIN_SPEED;
+      }
+      else
+      {
+        _servoSpeedRight = CW_MIN_SPEED + DISTANCE_TURN_GAIN;
+        _servoSpeedLeft = CCW_MIN_SPEED;
+      }
+  
+      processEncoders();
+      setBlinksLeft( 2 );
+      processLEDs();
+  
+      if ( distance_in_meters != 0.0 && _distanceTraveled > distance_in_meters )
+      {
+        break;
+      }
+    }
+  }
+
+  return driveStop();
+}
+double wall_follow_right_trigger_helper( double distance_in_meters, int wall_range, int stop_trigger_ir_range )
+{
+  _servoSpeedLeft = CCW_MIN_SPEED;
+  _servoSpeedRight = CW_MIN_SPEED;
+  _driveDirection = 1;
+
+  lookRight();
+  processDistanceSensor();
+
+  if ( stop_trigger_ir_range > 0 )
+  {
+    while ( irsensorValue < stop_trigger_ir_range )
+    {
+      processDistanceSensor();
+      if ( irsensorValue > wall_range )
+      {
+        _servoSpeedLeft = CCW_MIN_SPEED;
+        _servoSpeedRight = CW_MIN_SPEED + DISTANCE_TURN_GAIN;
+      }
+      else
+      {
+        _servoSpeedRight = CW_MIN_SPEED;
+        _servoSpeedLeft = CCW_MIN_SPEED - DISTANCE_TURN_GAIN;
+      }
+  
+      processEncoders();
+      setBlinksRight( 2 );
+      processLEDs();
+  
+      if ( distance_in_meters != 0.0 && _distanceTraveled > distance_in_meters )
+      {
+        break;
+      }
+    }
+  }
+  else
+  {
+    while ( irsensorValue > fabs(stop_trigger_ir_range) )
+    {
+      processDistanceSensor();
+      if ( irsensorValue > wall_range )
+      {
+        _servoSpeedLeft = CCW_MIN_SPEED;
+        _servoSpeedRight = CW_MIN_SPEED + DISTANCE_TURN_GAIN;
+      }
+      else
+      {
+        _servoSpeedRight = CW_MIN_SPEED;
+        _servoSpeedLeft = CCW_MIN_SPEED - DISTANCE_TURN_GAIN;
+      }
+  
+      processEncoders();
+      setBlinksRight( 2 );
+      processLEDs();
+  
+      if ( distance_in_meters != 0.0 && _distanceTraveled > distance_in_meters )
+      {
+        break;
+      }
+    }
+  }
+  
+  return driveStop();
+}
+
+#define WALL_LEFT 0
+#define WALL_RIGHT 1
+double WallFollow( int which_wall, double distance_in_meters, int wall_range, int stop_trigger_ir_range = 0 )
+{
+  if ( stop_trigger_ir_range == 0 ) //If there is no stop trigger follow the wall until distance_in_meters is reached
+  {
+    if ( which_wall == WALL_LEFT ) return wall_follow_left( distance_in_meters, wall_range );
+    else                           return wall_follow_right( distance_in_meters, wall_range );
+  }
+  else //There is a stop trigger, follow wall until trigger and use distance_in_meters as a travel limit
+  {
+    if ( which_wall == WALL_LEFT ) return wall_follow_left_trigger_helper( distance_in_meters, wall_range, stop_trigger_ir_range );
+    else                           return wall_follow_right_trigger_helper( distance_in_meters, wall_range, stop_trigger_ir_range );
+  }
+  return 0.0;
+}
+
+int IRread()
+{
+  return getCurrentDistance();
+}
+
+void Orientate( int look_direction = IR_PAN_CENTER )
+{
+  
+}
+
+#endif //--DRIVE_CONTROL_H

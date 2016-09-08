@@ -1,5 +1,5 @@
-#ifndef LED_CONTROL
-#define LED_CONTROL
+#ifndef LED_CONTROL_H
+#define LED_CONTROL_H
 
 #define LED_LEFT 7
 #define LED_RIGHT 4
@@ -60,4 +60,4 @@ void processLEDs()
   }
 }
 
-#endif //--LED_CONTROL
+#endif //--LED_CONTROL_H
