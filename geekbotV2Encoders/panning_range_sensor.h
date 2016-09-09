@@ -22,7 +22,7 @@ Servo servoSensor;
 
 int getCurrentDistance()
 {
-  int newReading = -1;
+  int newReading = 0;
   while ( newReading <= 0 ) //sample until valid distance is returned
   {
     newReading = sharp.distance();
@@ -42,21 +42,25 @@ void lookCustom( int microseconds )
 {
   servoSensor.writeMicroseconds( microseconds );
   delay(IR_PAN_DELAY); //delay so we have time to look before moving on
+  irsensorValue = getCurrentDistance(); //Update current IR value manually since it may have changed drastically
 }
 void lookForward()
 {
   servoSensor.writeMicroseconds( IR_PAN_CENTER );
   delay(IR_PAN_DELAY); //delay so we have time to look before sampling sensor
+  irsensorValue = getCurrentDistance(); //Update current IR value manually since it may have changed drastically
 }
 void lookLeft()
 {
   servoSensor.writeMicroseconds( IR_PAN_LEFT );
   delay(IR_PAN_DELAY); //delay so we have time to look before sampling sensor
+  irsensorValue = getCurrentDistance(); //Update current IR value manually since it may have changed drastically
 }
 void lookRight()
 {
   servoSensor.writeMicroseconds( IR_PAN_RIGHT );
   delay(IR_PAN_DELAY); //delay so we have time to look before sampling sensor
+  irsensorValue = getCurrentDistance(); //Update current IR value manually since it may have changed drastically
 }
 
 #endif //--PANNING_RANGE_SENSOR_H

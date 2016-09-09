@@ -99,7 +99,7 @@ void corner_left_example()
 {
   Drive( 0.45 );
   Rotate( -85 );
-  Drive( 0.55 );
+  Drive( 0.45 );
   lookLeft();
 }
 void loop() 
@@ -170,13 +170,13 @@ void loop()
   waitForButtonPress();
 
   /* Path from lab to kitchen */
-  Drive( 2.0, -40 ); //Exit room until wall is sampled less than 40cm away
+  Drive( 2.0, -40, IR_PAN_CENTER ); //Exit room until wall is sampled less than 40cm away, looking forward
   Rotate( -90 ); //Turn left
   Drive( 3.0, -30 ); //Drive until wall is sampled less than 30cm away
   Rotate( 90 ); //Turn right
   lookLeft(); //Looking left for IRread in next command
   WallFollow( WALL_LEFT, 0.0, IRread(), IRread()*2 ); //Follow left wall at current IR distance until wall ends
-  Drive( 0.0, -40, IR_PAN_CENTER ); //Drive forward until sofa is sampled less than 40cm away, looking forward
+  Drive( 0.0, -35, IR_PAN_CENTER ); //Drive forward until sofa is sampled less than 35cm away, looking forward
   Rotate( 90 ); //Turn right
   lookLeft(); //Looking left for IRread in next command
   WallFollow( WALL_LEFT, 0.0, IRread(), IRread()*2 ); //Follow left wall at current IR distance until wall ends
@@ -184,7 +184,7 @@ void loop()
   WallFollow( WALL_LEFT, 0.0, IRread(), IRread()*2 ); //Follow left wall at current IR distance until wall ends
   corner_left_example(); //Round the corner
   WallFollow( WALL_LEFT, 0.0, IRread(), IRread()*2 ); //End of back side of sofa
-  Drive( 1.05 ); //Bind drive 1.95 meters
+  Drive( 1.05 ); //Blind drive 1.95 meters
   Rotate( 90 ); //Turn right
   Drive( 0.0, -40, IR_PAN_LEFT ); //Drive until wall on left is sampled less than 40cm away
 }
