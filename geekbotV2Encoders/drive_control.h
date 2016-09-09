@@ -523,8 +523,6 @@ int IRread()
 
 void Orientate()
 {
-  Serial.println( IR_PAN_LEFT_45 );
-  
   int distance_fwd, distance_left, distance_right;
 
   lookCustom( IR_PAN_CENTER );
