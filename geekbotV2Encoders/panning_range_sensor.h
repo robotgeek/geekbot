@@ -22,20 +22,20 @@ Servo servoSensor;
 
 int getCurrentDistance()
 {
-  int newReading = 0;
+  int newReading = -1;
   while ( newReading <= 0 ) //sample until valid distance is returned
   {
     newReading = sharp.distance();
-    delay(5);
+    delay(10);
   }
   return newReading;
 }
 void processDistanceSensor()
 {
-  if ( _last_distance_timestamp + 100ul < millis() )
+  if ( _last_distance_timestamp + 50ul < millis() )
   {
     _last_distance_timestamp = millis();
-    irsensorValue = getCurrentDistance();
+    irsensorValue = irsensorValue * 0.5  + getCurrentDistance() * 0.5;
   }  
 }
 void lookCustom( int microseconds )

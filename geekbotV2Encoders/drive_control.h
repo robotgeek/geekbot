@@ -363,36 +363,36 @@ double drive_helper_with_trigger( double meter_limit, int stopRange )
   processDistanceSensor();
   if ( meter_limit == 0.0 ) //If there is no limit we drive until desired IR sensor reading is obtained
   {
-    if ( stopRange > 0 ) //Positive stop range means we stop driving when the range goes over the distance
+    if ( stopRange > 0 ) //Positive stop range means we stop driving when the current irsensorValue is greater than the stopRange
     {
-      while ( irsensorValue > stopRange )
+      while ( irsensorValue < stopRange ) //While the current irsensorValue is less than the stopRange
       {
         processDistanceSensor();
         processEncoders();
       }
     }
-    else //Negative stop range means we stop driving when the range goes under the absolute value of the distance
+    else //Negative stop range means we stop driving when the current irsensorValue is less than absolute value of the stopRange
     {
-      while ( irsensorValue < abs(stopRange) )
+      while ( irsensorValue > abs(stopRange) )
       {
         processDistanceSensor();
         processEncoders();
       }
     }
   }
-  else //No distance limit. We drive until desired IR sensor reading is obtained
+  else //Use distance limit. We drive until desired IR sensor reading is obtained or meter_limit is reach
   {
-    if ( stopRange > 0 ) //Positive stop range means we stop driving when the range goes over the distance
+    if ( stopRange > 0 ) //Positive stop range means we stop driving when the current irsensorValue is greater than the stopRange
     {
-      while ( _distanceTraveled < meter_limit && irsensorValue > stopRange )
+      while ( _distanceTraveled < meter_limit && irsensorValue < stopRange )
       {
         processDistanceSensor();
         processEncoders();
       }
     }
-    else //Negative stop range means we stop driving when the range goes under the absolute value of the distance
+    else //Negative stop range means we stop driving when the absolute value of the stopRange goes under the current irsensorValue
     {
-      while ( _distanceTraveled < meter_limit && irsensorValue < abs(stopRange) )
+      while ( _distanceTraveled < meter_limit && irsensorValue > abs(stopRange) )
       {
         processDistanceSensor();
         processEncoders();
@@ -408,9 +408,9 @@ double Drive( double distance_in_meters, int stop_trigger_ir_range = 0, int look
   {
     lookCustom( look_direction );
   }
-  if ( stop_trigger_ir_range > 0 )
+  if ( stop_trigger_ir_range != 0 )
   {
-    if ( distance_in_meters > 0.0 )
+    if ( distance_in_meters >= 0.0 )
     {
       _servoSpeedLeft = CCW_MIN_SPEED;
       _servoSpeedRight = CW_MIN_SPEED;
