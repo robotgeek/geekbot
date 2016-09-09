@@ -117,6 +117,7 @@ void processEncoders()
         _servoSpeedRight += _driveDirection * 3;
       }
     }
+
 #ifdef USB_DEBUG
     Serial.print( " PWM L: " );
     Serial.print( _servoSpeedLeft );
@@ -219,144 +220,6 @@ void driveRight( double p_degrees )
   }
   driveStop();
 }
-/*
-double driveForwardToDistance( double meter_limit, int p_stopRange )
-{
-  _servoSpeedLeft = CCW_MIN_SPEED;
-  _servoSpeedRight = CW_MIN_SPEED;
-  _driveDirection = 1;
-  
-  lookForward();
-  processDistanceSensor();
-  while ( _distanceTraveled < meter_limit && irsensorValue > p_stopRange )
-  {
-    processDistanceSensor();
-    processEncoders();
-  }
-  return driveStop();
-}
-
-void wallFollowLeft( int p_distance, double p_meters )
-{
-  _servoSpeedLeft = CCW_MIN_SPEED;
-  _servoSpeedRight = CW_MIN_SPEED;
-  _driveDirection = 1;
-
-  lookLeft();
-  
-  while ( _distanceTraveled < p_meters )
-  {
-    processDistanceSensor();
-    if ( irsensorValue > p_distance )
-    {
-      _servoSpeedLeft = CCW_MIN_SPEED - DISTANCE_TURN_GAIN;
-      _servoSpeedRight = CW_MIN_SPEED;
-    }
-    else
-    {
-      _servoSpeedRight = CW_MIN_SPEED + DISTANCE_TURN_GAIN;
-      _servoSpeedLeft = CCW_MIN_SPEED;
-    }
-
-    processEncoders();
-    setBlinksLeft( 2 );
-    processLEDs();
-  }
-  driveStop();
-}
-
-double wallFollowLeftUntil( int p_distance, int p_stopRange )
-{
-  _servoSpeedLeft = CCW_MIN_SPEED;
-  _servoSpeedRight = CW_MIN_SPEED;
-  _driveDirection = 1;
-
-  lookLeft();
-  processDistanceSensor();
-  
-  while ( irsensorValue < p_stopRange )
-  {
-    processDistanceSensor();
-    if ( irsensorValue > p_distance )
-    {
-      _servoSpeedLeft = CCW_MIN_SPEED - DISTANCE_TURN_GAIN;
-      _servoSpeedRight = CW_MIN_SPEED;
-    }
-    else
-    {
-      _servoSpeedRight = CW_MIN_SPEED + DISTANCE_TURN_GAIN;
-      _servoSpeedLeft = CCW_MIN_SPEED;
-    }
-
-    processEncoders();
-    setBlinksLeft( 2 );
-    processLEDs();
-  }
-
-  return driveStop();
-}
-
-void wallFollowRight( int p_distance, double p_meters )
-{
-  _servoSpeedLeft = CCW_MIN_SPEED;
-  _servoSpeedRight = CW_MIN_SPEED;
-  _driveDirection = 1;
-
-  lookRight();
-  
-  while ( _distanceTraveled < p_meters )
-  {
-    processDistanceSensor();
-    if ( irsensorValue > p_distance )
-    {
-      _servoSpeedLeft = CCW_MIN_SPEED;
-      _servoSpeedRight = CW_MIN_SPEED + DISTANCE_TURN_GAIN;
-    }
-    else
-    {
-      _servoSpeedRight = CW_MIN_SPEED;
-      _servoSpeedLeft = CCW_MIN_SPEED - DISTANCE_TURN_GAIN;
-    }
-
-    processEncoders();
-    setBlinksRight( 2 );
-    processLEDs();
-  }
-  driveStop();
-}
-
-double wallFollowRightUntil( int p_distance, int p_stopRange )
-{
-  _servoSpeedLeft = CCW_MIN_SPEED;
-  _servoSpeedRight = CW_MIN_SPEED;
-  _driveDirection = 1;
-
-  lookRight();
-  processDistanceSensor();
-  
-  while ( irsensorValue < p_stopRange )
-  {
-    processDistanceSensor();
-    if ( irsensorValue > p_distance )
-    {
-      _servoSpeedLeft = CCW_MIN_SPEED;
-      _servoSpeedRight = CW_MIN_SPEED + DISTANCE_TURN_GAIN;
-    }
-    else
-    {
-      _servoSpeedRight = CW_MIN_SPEED;
-      _servoSpeedLeft = CCW_MIN_SPEED - DISTANCE_TURN_GAIN;
-    }
-
-    processEncoders();
-    setBlinksRight( 2 );
-    processLEDs();
-  }
-
-  return driveStop();
-}
-*/
-/* NEW CODE - Requested 9-7-16 */
 
 double drive_helper_with_trigger( double meter_limit, int stopRange )
 {
@@ -658,9 +521,73 @@ int IRread()
   return getCurrentDistance();
 }
 
-void Orientate( int look_direction = IR_PAN_CENTER )
+void Orientate()
 {
+  Serial.println( IR_PAN_LEFT_45 );
   
+  int distance_fwd, distance_left, distance_right;
+
+  lookCustom( IR_PAN_CENTER );
+  distance_fwd = IRread();
+  lookCustom( IR_PAN_LEFT_45 );
+  distance_left = IRread();
+  lookCustom( IR_PAN_RIGHT_45 );
+  distance_right = IRread();
+
+
+#ifdef USB_DEBUG
+  Serial.print( "Orientate IR Range L: " );
+  Serial.print( distance_left );
+  Serial.print( " C: " );
+  Serial.print( distance_fwd );
+  Serial.print( " R: " );
+  Serial.println( distance_right );
+#endif
+
+  double wall_length, wall_angle;
+
+  if ( distance_left > distance_right )
+  {
+#ifdef USB_DEBUG
+    Serial.println( "Left is further, solving for right." );
+#endif
+    //https://www.mathsisfun.com/algebra/trig-solving-sas-triangles.html
+    wall_length = (distance_fwd * distance_fwd) + (distance_right * distance_right) - (2 * distance_fwd * distance_right) * cos( 45 );
+    wall_length = sqrt( wall_length );
+    
+    //https://www.mathsisfun.com/algebra/trig-solving-sss-triangles.html
+    //Solving for C
+    wall_angle = (wall_length * wall_length) + (distance_fwd * distance_fwd) - ( distance_right * distance_right );
+    wall_angle /= 2 * wall_length * distance_fwd; 
+    wall_angle *= 57.2958; //Rad to Deg
+
+    if ( fabs( wall_angle ) > 22.0 ) Rotate( wall_angle );
+  }
+  else
+  {
+#ifdef USB_DEBUG
+    Serial.println( "Right is further, solving for left." );
+#endif
+    //https://www.mathsisfun.com/algebra/trig-solving-sas-triangles.html
+    wall_length = (distance_fwd * distance_fwd) + (distance_left * distance_left) - (2 * distance_fwd * distance_left) * cos( 45 );
+    wall_length = sqrt( wall_length );
+    
+    //https://www.mathsisfun.com/algebra/trig-solving-sss-triangles.html
+    //Solving for B
+    wall_angle = (distance_fwd * distance_fwd) + (wall_length * wall_length) - ( distance_left * distance_left );
+    wall_angle /= 2 * distance_fwd * wall_length; 
+    wall_angle *= 57.2958; //Rad to Deg
+
+    if ( fabs( wall_angle ) > 22.0 ) Rotate( -wall_angle );
+  }
+
+#ifdef USB_DEBUG
+  Serial.print( "Wall length: " );
+  Serial.print( wall_length );
+  Serial.print( " Wall angle: " );
+  Serial.println( wall_angle );
+#endif
+
 }
 
 #endif //--DRIVE_CONTROL_H

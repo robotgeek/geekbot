@@ -158,6 +158,9 @@ void loop()
    * IRread()
    *    Returns integer value representing the IR range in centimeters
    *    
+   * Orientate()
+   *    Experimental: Measures front facing wall, estimates angle and rotates robot to be perpendicular to the wall
+   *    
    * waitForButtonPress()
    * waitForButtonRelease()
    * 
@@ -165,10 +168,10 @@ void loop()
    * 
   \******************************************************/
  
-  playSound(BEEPS);
+  playSound(UP);
   
   waitForButtonPress();
-
+  
   /* Path from lab to kitchen */
   Drive( 2.0, -40, IR_PAN_CENTER ); //Exit room until wall is sampled less than 40cm away, looking forward
   Rotate( -90 ); //Turn left
