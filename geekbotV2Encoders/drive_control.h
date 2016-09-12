@@ -8,14 +8,16 @@
 #define LEFT_ENCODER_PIN 3
 #define RIGHT_ENCODER_PIN 4
 
+#define ROTATION_KNOB_PIN 2 //For wheel speed trim adjustment
+
 #define WheelRadius 0.05 //meters (50 millimeters)
 #define WheelSpacing 0.195 //meters (195 millimeters)
 
 Servo servoLeft, servoRight;      //wheel servo objects
 
 //Constants
-const int CW_MIN_SPEED = 1380; //1400;    //servo pulse in microseconds for slowest clockwise speed
-const int CCW_MIN_SPEED = 1600;           //servo pulse in microseconds for slowest counter-clockwise speed
+const int CW_MIN_SPEED = 1400;    //servo pulse in microseconds for slowest clockwise speed
+const int CCW_MIN_SPEED = 1600;   //servo pulse in microseconds for slowest counter-clockwise speed
 const int SERVO_STOP = 1500;        //servo pulse in microseconds for stopped servo
 const int ENCODER_VALUE_THRESHOLD = 512; //ADC input value for high signal
 const int encoderCounts_per_revolution = 64; //Number of slices on wheel encoder
@@ -27,6 +29,8 @@ const double degrees_per_revolution = meters_per_revolution / wheel_to_wheel_cir
 
 const double meters_per_tick = meters_per_revolution / encoderCounts_per_revolution;
 const double degrees_per_tick = degrees_per_revolution / encoderCounts_per_revolution;
+
+int _wheel_speed_trim = 0; //Current trim for servo pulse in microseconds
 
 int _servoSpeedLeft = SERVO_STOP;  //left servo speed
 int _servoSpeedRight = SERVO_STOP; //right servo speed
@@ -49,6 +53,20 @@ double _wheelSpeedLeft = 0.0;  //Current wheel speed in revolutions/second
 int _driveDirection = 1; //Current driving direction for wheel speed correction
 
 unsigned long _last_timestamp = millis();
+
+void updateDriveTrim()
+{
+  int knob_value = analogRead( ROTATION_KNOB_PIN );
+  _wheel_speed_trim = map( knob_value, 0, 1023, -30, 30 );
+  /*
+#ifdef USB_DEBUG
+  Serial.print( "Drive Trim: " );
+  Serial.print( _wheel_speed_trim );
+  Serial.print( " Raw: " );
+  Serial.println( knob_value );
+#endif
+*/
+}
 
 void processEncoders()
 {
@@ -108,13 +126,19 @@ void processEncoders()
     {
       if ( _leftEncoderCount - _rightEncoderCount > 1 )
       {
-        _servoSpeedLeft += _driveDirection * 3;
+        //_servoSpeedLeft += _driveDirection * 3;
         _servoSpeedRight -= _driveDirection * 3;
       }
       else if ( _rightEncoderCount - _leftEncoderCount > 1 )
       {
         _servoSpeedLeft -= _driveDirection * 3;
-        _servoSpeedRight += _driveDirection * 3;
+        //_servoSpeedRight += _driveDirection * 3;
+      }
+      else
+      {
+          updateDriveTrim();
+          _servoSpeedLeft = CCW_MIN_SPEED + _wheel_speed_trim * _driveDirection;
+          _servoSpeedRight = CW_MIN_SPEED + _wheel_speed_trim * _driveDirection;
       }
     }
 
@@ -175,8 +199,9 @@ double driveStop()
 
 double driveForward( double meters )
 {
-  _servoSpeedLeft = CCW_MIN_SPEED;
-  _servoSpeedRight = CW_MIN_SPEED;
+  updateDriveTrim();
+  _servoSpeedLeft = CCW_MIN_SPEED + _wheel_speed_trim;
+  _servoSpeedRight = CW_MIN_SPEED + _wheel_speed_trim;
   _driveDirection = 1;
   while ( _distanceTraveled < meters )
   {
@@ -187,8 +212,9 @@ double driveForward( double meters )
 
 double driveReverse( double meters )
 {
-  _servoSpeedLeft = CW_MIN_SPEED;
-  _servoSpeedRight = CCW_MIN_SPEED;
+  updateDriveTrim();
+  _servoSpeedLeft = CW_MIN_SPEED + _wheel_speed_trim;
+  _servoSpeedRight = CCW_MIN_SPEED + _wheel_speed_trim;
   _driveDirection = -1;
   while ( _distanceTraveled < meters )
   {
@@ -199,8 +225,9 @@ double driveReverse( double meters )
 
 void driveLeft( double p_degrees )
 {
-  _servoSpeedLeft = CW_MIN_SPEED;
-  _servoSpeedRight = CW_MIN_SPEED;
+  updateDriveTrim();
+  _servoSpeedLeft = CW_MIN_SPEED + _wheel_speed_trim;
+  _servoSpeedRight = CW_MIN_SPEED + _wheel_speed_trim;
   _driveDirection = 0;
   while ( _degreesTraveled < p_degrees )
   {
@@ -211,8 +238,9 @@ void driveLeft( double p_degrees )
 
 void driveRight( double p_degrees )
 {
-  _servoSpeedLeft = CCW_MIN_SPEED;
-  _servoSpeedRight = CCW_MIN_SPEED;
+  updateDriveTrim();
+  _servoSpeedLeft = CCW_MIN_SPEED + _wheel_speed_trim;
+  _servoSpeedRight = CCW_MIN_SPEED + _wheel_speed_trim;
   _driveDirection = 0;
   while ( _degreesTraveled < p_degrees )
   { 
@@ -275,15 +303,17 @@ double Drive( double distance_in_meters, int stop_trigger_ir_range = 0, int look
   {
     if ( distance_in_meters >= 0.0 )
     {
-      _servoSpeedLeft = CCW_MIN_SPEED;
-      _servoSpeedRight = CW_MIN_SPEED;
+      updateDriveTrim();
+      _servoSpeedLeft = CCW_MIN_SPEED + _wheel_speed_trim;
+      _servoSpeedRight = CW_MIN_SPEED + _wheel_speed_trim;
       _driveDirection = 1;    
       return drive_helper_with_trigger( distance_in_meters, stop_trigger_ir_range );
     }
     else
     {
-      _servoSpeedLeft = CW_MIN_SPEED;
-      _servoSpeedRight = CCW_MIN_SPEED;
+      updateDriveTrim();
+      _servoSpeedLeft = CW_MIN_SPEED + _wheel_speed_trim;
+      _servoSpeedRight = CCW_MIN_SPEED + _wheel_speed_trim;
       _driveDirection = -1;
       return drive_helper_with_trigger( distance_in_meters, stop_trigger_ir_range );
     }
@@ -310,31 +340,79 @@ void Rotate( double num_degrees )
   }
 }
 
+
+bool _wall_follow_left_loop( double distance_in_meters, int wall_range )
+{
+  processDistanceSensor();
+  if ( irsensorValue - wall_range >= 1 ) //If the wall is too far slow the left wheel
+  {
+    _servoSpeedLeft = CCW_MIN_SPEED - DISTANCE_TURN_GAIN + _wheel_speed_trim;
+    _servoSpeedRight = CW_MIN_SPEED + _wheel_speed_trim;
+  }
+  else if ( wall_range - irsensorValue >= 1 ) //If the wall is too close slow down the right wheel.
+  {
+    _servoSpeedLeft = CCW_MIN_SPEED + _wheel_speed_trim;
+    _servoSpeedRight = CW_MIN_SPEED + DISTANCE_TURN_GAIN + _wheel_speed_trim;
+  }
+  else //Drive straight
+  {
+    _servoSpeedLeft = CCW_MIN_SPEED + _wheel_speed_trim;
+    _servoSpeedRight = CW_MIN_SPEED + _wheel_speed_trim;
+  }
+
+  processEncoders();
+  setBlinksLeft( 2 );
+  processLEDs();
+
+  if ( distance_in_meters != 0.0 && _distanceTraveled > distance_in_meters )
+  {
+    return false;
+  }
+  return true;
+}
+
+bool _wall_follow_right_loop( double distance_in_meters, int wall_range )
+{
+  processDistanceSensor();
+  if ( irsensorValue - wall_range >= 1 ) //If the wall is too far slow the right wheel
+  {
+    _servoSpeedLeft = CCW_MIN_SPEED + _wheel_speed_trim;
+    _servoSpeedRight = CW_MIN_SPEED + DISTANCE_TURN_GAIN + _wheel_speed_trim;
+  }
+  else if ( wall_range - irsensorValue >= 1 ) //If the wall is too close slow down the left wheel.
+  {
+    _servoSpeedLeft = CCW_MIN_SPEED - DISTANCE_TURN_GAIN + _wheel_speed_trim;
+    _servoSpeedRight = CW_MIN_SPEED + _wheel_speed_trim;
+  }
+  else //Drive straight
+  {
+    _servoSpeedLeft = CCW_MIN_SPEED + _wheel_speed_trim;
+    _servoSpeedRight = CW_MIN_SPEED + _wheel_speed_trim;
+  }
+
+  processEncoders();
+  setBlinksRight( 2 );
+  processLEDs();
+
+  if ( distance_in_meters != 0.0 && _distanceTraveled > distance_in_meters )
+  {
+    return false;
+  }
+  return true;
+}
+
 double wall_follow_left( double distance_in_meters, int wall_distance )
 {
-  _servoSpeedLeft = CCW_MIN_SPEED;
-  _servoSpeedRight = CW_MIN_SPEED;
+  updateDriveTrim();
+  _servoSpeedLeft = CCW_MIN_SPEED + _wheel_speed_trim;
+  _servoSpeedRight = CW_MIN_SPEED + _wheel_speed_trim;
   _driveDirection = 1;
 
   lookLeft();
 
   while ( _distanceTraveled < distance_in_meters )
   {
-    processDistanceSensor();
-    if ( irsensorValue > wall_distance )
-    {
-      _servoSpeedLeft = CCW_MIN_SPEED - DISTANCE_TURN_GAIN;
-      _servoSpeedRight = CW_MIN_SPEED;
-    }
-    else
-    {
-      _servoSpeedRight = CW_MIN_SPEED + DISTANCE_TURN_GAIN;
-      _servoSpeedLeft = CCW_MIN_SPEED;
-    }
-
-    processEncoders();
-    setBlinksLeft( 2 );
-    processLEDs();
+    _wall_follow_left_loop( distance_in_meters, wall_distance );
   }
 
   return driveStop();
@@ -342,29 +420,16 @@ double wall_follow_left( double distance_in_meters, int wall_distance )
 
 double wall_follow_right( double distance_in_meters, int wall_distance )
 {
-  _servoSpeedLeft = CCW_MIN_SPEED;
-  _servoSpeedRight = CW_MIN_SPEED;
+  updateDriveTrim();
+  _servoSpeedLeft = CCW_MIN_SPEED + _wheel_speed_trim;
+  _servoSpeedRight = CW_MIN_SPEED + _wheel_speed_trim;
   _driveDirection = 1;
 
   lookRight();
   
   while ( _distanceTraveled < distance_in_meters )
   {
-    processDistanceSensor();
-    if ( irsensorValue > wall_distance )
-    {
-      _servoSpeedLeft = CCW_MIN_SPEED;
-      _servoSpeedRight = CW_MIN_SPEED + DISTANCE_TURN_GAIN;
-    }
-    else
-    {
-      _servoSpeedRight = CW_MIN_SPEED;
-      _servoSpeedLeft = CCW_MIN_SPEED - DISTANCE_TURN_GAIN;
-    }
-
-    processEncoders();
-    setBlinksRight( 2 );
-    processLEDs();
+    _wall_follow_right_loop( distance_in_meters, wall_distance );
   }
   
   return driveStop();
@@ -372,8 +437,9 @@ double wall_follow_right( double distance_in_meters, int wall_distance )
 
 double wall_follow_left_trigger_helper( double distance_in_meters, int wall_range, int stop_trigger_ir_range )
 {
-  _servoSpeedLeft = CCW_MIN_SPEED;
-  _servoSpeedRight = CW_MIN_SPEED;
+  updateDriveTrim();
+  _servoSpeedLeft = CCW_MIN_SPEED + _wheel_speed_trim;
+  _servoSpeedRight = CW_MIN_SPEED + _wheel_speed_trim;
   _driveDirection = 1;
 
   lookLeft();
@@ -383,52 +449,14 @@ double wall_follow_left_trigger_helper( double distance_in_meters, int wall_rang
   {
     while ( irsensorValue < stop_trigger_ir_range )
     {
-      processDistanceSensor();
-      if ( irsensorValue > wall_range )
-      {
-        _servoSpeedLeft = CCW_MIN_SPEED - DISTANCE_TURN_GAIN;
-        _servoSpeedRight = CW_MIN_SPEED;
-      }
-      else
-      {
-        _servoSpeedRight = CW_MIN_SPEED + DISTANCE_TURN_GAIN;
-        _servoSpeedLeft = CCW_MIN_SPEED;
-      }
-  
-      processEncoders();
-      setBlinksLeft( 2 );
-      processLEDs();
-  
-      if ( distance_in_meters != 0.0 && _distanceTraveled > distance_in_meters )
-      {
-        break;
-      }
+      if ( !_wall_follow_left_loop( distance_in_meters, wall_range ) ) break;
     }
   }
   else
   {
     while ( irsensorValue > abs(stop_trigger_ir_range) )
     {
-      processDistanceSensor();
-      if ( irsensorValue > wall_range )
-      {
-        _servoSpeedLeft = CCW_MIN_SPEED - DISTANCE_TURN_GAIN;
-        _servoSpeedRight = CW_MIN_SPEED;
-      }
-      else
-      {
-        _servoSpeedRight = CW_MIN_SPEED + DISTANCE_TURN_GAIN;
-        _servoSpeedLeft = CCW_MIN_SPEED;
-      }
-  
-      processEncoders();
-      setBlinksLeft( 2 );
-      processLEDs();
-  
-      if ( distance_in_meters != 0.0 && _distanceTraveled > distance_in_meters )
-      {
-        break;
-      }
+      if ( !_wall_follow_left_loop( distance_in_meters, wall_range ) ) break;
     }
   }
 
@@ -436,8 +464,9 @@ double wall_follow_left_trigger_helper( double distance_in_meters, int wall_rang
 }
 double wall_follow_right_trigger_helper( double distance_in_meters, int wall_range, int stop_trigger_ir_range )
 {
-  _servoSpeedLeft = CCW_MIN_SPEED;
-  _servoSpeedRight = CW_MIN_SPEED;
+  updateDriveTrim();
+  _servoSpeedLeft = CCW_MIN_SPEED + _wheel_speed_trim;
+  _servoSpeedRight = CW_MIN_SPEED + _wheel_speed_trim;
   _driveDirection = 1;
 
   lookRight();
@@ -447,52 +476,14 @@ double wall_follow_right_trigger_helper( double distance_in_meters, int wall_ran
   {
     while ( irsensorValue < stop_trigger_ir_range )
     {
-      processDistanceSensor();
-      if ( irsensorValue > wall_range )
-      {
-        _servoSpeedLeft = CCW_MIN_SPEED;
-        _servoSpeedRight = CW_MIN_SPEED + DISTANCE_TURN_GAIN;
-      }
-      else
-      {
-        _servoSpeedRight = CW_MIN_SPEED;
-        _servoSpeedLeft = CCW_MIN_SPEED - DISTANCE_TURN_GAIN;
-      }
-  
-      processEncoders();
-      setBlinksRight( 2 );
-      processLEDs();
-  
-      if ( distance_in_meters != 0.0 && _distanceTraveled > distance_in_meters )
-      {
-        break;
-      }
+      if ( !_wall_follow_right_loop( distance_in_meters, wall_range ) ) break;
     }
   }
   else
   {
     while ( irsensorValue > fabs(stop_trigger_ir_range) )
     {
-      processDistanceSensor();
-      if ( irsensorValue > wall_range )
-      {
-        _servoSpeedLeft = CCW_MIN_SPEED;
-        _servoSpeedRight = CW_MIN_SPEED + DISTANCE_TURN_GAIN;
-      }
-      else
-      {
-        _servoSpeedRight = CW_MIN_SPEED;
-        _servoSpeedLeft = CCW_MIN_SPEED - DISTANCE_TURN_GAIN;
-      }
-  
-      processEncoders();
-      setBlinksRight( 2 );
-      processLEDs();
-  
-      if ( distance_in_meters != 0.0 && _distanceTraveled > distance_in_meters )
-      {
-        break;
-      }
+      if ( !_wall_follow_right_loop( distance_in_meters, wall_range ) ) break;
     }
   }
   

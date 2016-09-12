@@ -14,8 +14,10 @@
  *    Left LED - Digital Pin 7
  *    Right LED - Digital Pin 4
  *    Push Switch - Digital Pin 5
+ *    Rotation Knob - Analog Pin 2
  *    Left IR Encoder - Analog Pin 3
  *    Right IR Encoder - Analog Pin 4
+ *    SharpIR Module - Analog Pin 5
  *    
  *    Jumper for pins 9/10/11 should be set to 'VIN'
  *    Jumper for pins 3/5/6 should be set to '5V'
@@ -171,23 +173,24 @@ void loop()
   playSound(UP);
   
   waitForButtonPress();
-  
+
   /* Path from lab to kitchen */
   Drive( 2.0, -40, IR_PAN_CENTER ); //Exit room until wall is sampled less than 40cm away, looking forward
   Rotate( -90 ); //Turn left
   Drive( 3.0, -30 ); //Drive until wall is sampled less than 30cm away
   Rotate( 90 ); //Turn right
   lookLeft(); //Looking left for IRread in next command
-  WallFollow( WALL_LEFT, 0.0, IRread(), IRread()*2 ); //Follow left wall at current IR distance until wall ends
+  WallFollow( WALL_LEFT, 0.0, IRread(), IRread()+10 ); //Follow left wall at current IR distance until wall ends
   Drive( 0.0, -35, IR_PAN_CENTER ); //Drive forward until sofa is sampled less than 35cm away, looking forward
   Rotate( 90 ); //Turn right
   lookLeft(); //Looking left for IRread in next command
-  WallFollow( WALL_LEFT, 0.0, IRread(), IRread()*2 ); //Follow left wall at current IR distance until wall ends
+  WallFollow( WALL_LEFT, 0.0, IRread(), IRread()+10 ); //Follow left wall at current IR distance until wall ends
   corner_left_example(); //Round the corner
-  WallFollow( WALL_LEFT, 0.0, IRread(), IRread()*2 ); //Follow left wall at current IR distance until wall ends
+  WallFollow( WALL_LEFT, 0.0, IRread(), IRread()+10 ); //Follow left wall at current IR distance until wall ends
   corner_left_example(); //Round the corner
-  WallFollow( WALL_LEFT, 0.0, IRread(), IRread()*2 ); //End of back side of sofa
+  WallFollow( WALL_LEFT, 0.0, IRread(), IRread()+10 ); //End of back side of sofa
   Drive( 1.05 ); //Blind drive 1.95 meters
   Rotate( 90 ); //Turn right
-  Drive( 0.0, -40, IR_PAN_LEFT ); //Drive until wall on left is sampled less than 40cm away
+  Drive( 0.0, -40, IR_PAN_RIGHT ); //Drive until wall on right is sampled less than 40cm away
+  WallFollow( WALL_RIGHT, 0.0, IRread(), IRread()+10 ); //Follow right wall at current IR distance until wall ends
 }
