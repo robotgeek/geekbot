@@ -91,9 +91,6 @@ void setup()
 
   pinMode( SWITCH_PIN, INPUT );
 
-  _last_timestamp = millis();
-  _last_distance_timestamp = millis();
-
   irsensorValue = getCurrentDistance();
 }
 
@@ -104,6 +101,15 @@ void corner_left_example()
   Drive( 0.45 );
   lookLeft();
 }
+
+void corner_right_example()
+{
+  Drive( 0.45 );
+  Rotate( 85 );
+  Drive( 0.45 );
+  lookRight();
+}
+
 void loop() 
 {
   /******************************************************\
@@ -169,10 +175,16 @@ void loop()
    * playSound( SoundID )
    * 
   \******************************************************/
- 
+
   playSound(UP);
-  
+
   waitForButtonPress();
+
+  while(1) //Square repeatability test
+  {
+    Drive( 1.0 );
+    Rotate( 90 );
+  }
 
   /* Path from lab to kitchen */
   Drive( 2.0, -40, IR_PAN_CENTER ); //Exit room until wall is sampled less than 40cm away, looking forward

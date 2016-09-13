@@ -49,7 +49,8 @@ unsigned long _ticksTraveledRight = 0; //total ticks traveled per command
 
 int _driveDirection = 1; //Current driving direction for wheel speed correction
 
-unsigned long _last_timestamp = millis();
+unsigned long _last_speed_correction_timestamp = millis();
+unsigned long _last_travel_timestamp = millis();
 
 void updateDriveTrim()
 {
@@ -59,6 +60,8 @@ void updateDriveTrim()
 
 void processEncoders()
 {
+  unsigned long millisnow = millis();
+  
   int rightEncoderValue = analogRead(RIGHT_ENCODER_PIN); // get encoder value
   int leftEncoderValue = analogRead(LEFT_ENCODER_PIN);
 
@@ -89,17 +92,29 @@ void processEncoders()
     _leftEncoderRising = false;
     _leftEncoderFalling = true;
   }
-  
-  if ( _last_timestamp + 100ul < millis() )
+
+  //Integrate distance travel and degrees traveled every 20 milliseconds
+  if ( _last_travel_timestamp + 20ul < millisnow )
   {
-    _last_timestamp = millis();
+    _last_travel_timestamp = millisnow;
+    
+    _ticksTraveledLeft += _leftEncoderCount;
+    _ticksTraveledRight += _rightEncoderCount;
+    
+    _distanceTraveled += (_leftEncoderCount + _rightEncoderCount)/2.0 * meters_per_tick;
+    _degreesTraveled += (_leftEncoderCount + _rightEncoderCount)/2.0 * degrees_per_tick;
+    
+    _rightEncoderCount = 0;
+    _leftEncoderCount = 0;
+  }
+
+  //Compensate wheel speeed based on encoder feedback every 100 milliseconds
+  if ( _last_speed_correction_timestamp + 100ul < millisnow )
+  {
+    _last_speed_correction_timestamp = millisnow;
 
 #ifdef USB_DEBUG
-    Serial.print("Ticks L:");
-    Serial.print(_leftEncoderCount);
-    Serial.print(" R:");
-    Serial.print(_rightEncoderCount);
-    Serial.print(" Total L:");
+    Serial.print("Encoder Count L:");
     Serial.print(_ticksTraveledLeft);
     Serial.print(" R:");
     Serial.print(_ticksTraveledLeft);
@@ -131,18 +146,14 @@ void processEncoders()
     Serial.print( " R: " );
     Serial.print( _servoSpeedRight );
 
-    Serial.print( " Range: " );
-    Serial.println( irsensorValue );
+    Serial.print( " IR Range: " );
+    Serial.print( irsensorValue );
+
+    Serial.print( " Distance: " );
+    Serial.print( _distanceTraveled );
+    Serial.print( " Degrees: " );
+    Serial.println( _degreesTraveled );
 #endif
-    
-    _ticksTraveledLeft += _leftEncoderCount;
-    _ticksTraveledRight += _rightEncoderCount;
-    
-    _distanceTraveled += (_leftEncoderCount + _rightEncoderCount)/2.0 * meters_per_tick;
-    _degreesTraveled += (_leftEncoderCount + _rightEncoderCount)/2.0 * degrees_per_tick;
-    
-    _rightEncoderCount = 0;
-    _leftEncoderCount = 0;
   }
 
   servoLeft.writeMicroseconds( _servoSpeedLeft );
