@@ -40,15 +40,12 @@ bool _rightEncoderFalling = false;  //state of encoder counting
 bool _leftEncoderRising = true;     //state of encoder counting
 bool _leftEncoderFalling = false;   //state of encoder counting
 
-int _rightEncoderCount = 0; //number of encoder ticks per command
-int _leftEncoderCount = 0; //number of encoder ticks per command
+int _rightEncoderCount = 0; //number of encoder ticks per interval during command
+int _leftEncoderCount = 0; //number of encoder ticks per interval during command
 double _degreesTraveled = 0.0; //total degrees of rotation per command
 double _distanceTraveled = 0.0; //integrated velocity over time
 unsigned long _ticksTraveledLeft = 0; //total ticks traveled per command
 unsigned long _ticksTraveledRight = 0; //total ticks traveled per command
-
-double _wheelSpeedRight = 0.0; //Current wheel speed in revolutions/second
-double _wheelSpeedLeft = 0.0;  //Current wheel speed in revolutions/second
 
 int _driveDirection = 1; //Current driving direction for wheel speed correction
 
@@ -93,24 +90,19 @@ void processEncoders()
     _leftEncoderFalling = true;
   }
   
-  if ( _last_timestamp + 100ul < millis() )
+  if ( _last_timestamp + 50ul < millis() )
   {
     _last_timestamp = millis();
-
-    _wheelSpeedRight = (double)_rightEncoderCount/(double)encoderCounts_per_revolution;
-    _wheelSpeedLeft = (double)_leftEncoderCount/(double)encoderCounts_per_revolution;
-    _wheelSpeedRight *= 10.0; //Sampling at 10Hz but reporting speed at 1 Revolution/Second
-    _wheelSpeedLeft *= 10.0;
 
 #ifdef USB_DEBUG
     Serial.print("Ticks L:");
     Serial.print(_leftEncoderCount);
     Serial.print(" R:");
     Serial.print(_rightEncoderCount);
-    Serial.print(" RPS L:");
-    Serial.print(_wheelSpeedLeft);
+    Serial.print(" Total L:");
+    Serial.print(_ticksTraveledLeft);
     Serial.print(" R:");
-    Serial.print(_wheelSpeedRight);
+    Serial.print(_ticksTraveledLeft);
 #endif
 
     //Wheel speed compensation
@@ -118,13 +110,11 @@ void processEncoders()
     {
       if ( _leftEncoderCount - _rightEncoderCount > 1 )
       {
-        //_servoSpeedLeft += _driveDirection * 3;
-        _servoSpeedRight -= _driveDirection * 3;
+        _servoSpeedRight -= _driveDirection * 1;
       }
       else if ( _rightEncoderCount - _leftEncoderCount > 1 )
       {
-        _servoSpeedLeft -= _driveDirection * 3;
-        //_servoSpeedRight += _driveDirection * 3;
+        _servoSpeedLeft -= _driveDirection * 1;
       }
       else
       {
