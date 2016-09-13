@@ -90,7 +90,7 @@ void processEncoders()
     _leftEncoderFalling = true;
   }
   
-  if ( _last_timestamp + 50ul < millis() )
+  if ( _last_timestamp + 100ul < millis() )
   {
     _last_timestamp = millis();
 
@@ -110,11 +110,11 @@ void processEncoders()
     {
       if ( _leftEncoderCount - _rightEncoderCount > 1 )
       {
-        _servoSpeedRight -= _driveDirection * 1;
+        _servoSpeedRight -= _driveDirection * 3;
       }
       else if ( _rightEncoderCount - _leftEncoderCount > 1 )
       {
-        _servoSpeedLeft -= _driveDirection * 1;
+        _servoSpeedLeft -= _driveDirection * 3;
       }
       else
       {
