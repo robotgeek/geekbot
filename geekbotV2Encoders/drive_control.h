@@ -180,7 +180,9 @@ double driveStop()
   flashLEDs( 3, 250 );
 
   total_distance_traveled = _distanceTraveled;
-  
+
+  _rightEncoderCount = 0;
+  _leftEncoderCount = 0;
   _ticksTraveledLeft = 0;
   _ticksTraveledRight = 0;
   _distanceTraveled = 0.0;
