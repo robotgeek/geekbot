@@ -181,12 +181,22 @@ double driveStop()
   return total_distance_traveled;
 }
 
+void driveStart( int leftSpeed, int rightSpeed )
+{
+  int rampSpeedLeft = (SERVO_STOP - leftSpeed) / 2;
+  int rampSpeedRight = (SERVO_STOP - rightSpeed) / 2;
+  
+  servoLeft.writeMicroseconds( SERVO_STOP + rampSpeedLeft );
+  servoRight.writeMicroseconds( SERVO_STOP + rampSpeedRight );
+}
+
 double driveForward( double meters )
 {
   updateDriveTrim();
   _servoSpeedLeft = CCW_MIN_SPEED + _wheel_speed_trim;
   _servoSpeedRight = CW_MIN_SPEED + _wheel_speed_trim;
   _driveDirection = 1;
+  driveStart( _servoSpeedLeft, _servoSpeedRight );
   while ( _distanceTraveled < meters )
   {
     processEncoders();
@@ -200,6 +210,7 @@ double driveReverse( double meters )
   _servoSpeedLeft = CW_MIN_SPEED + _wheel_speed_trim;
   _servoSpeedRight = CCW_MIN_SPEED + _wheel_speed_trim;
   _driveDirection = -1;
+  driveStart( _servoSpeedLeft, _servoSpeedRight );
   while ( _distanceTraveled < meters )
   {
     processEncoders();
@@ -213,6 +224,7 @@ void driveLeft( double p_degrees )
   _servoSpeedLeft = CW_MIN_SPEED + _wheel_speed_trim;
   _servoSpeedRight = CW_MIN_SPEED + _wheel_speed_trim;
   _driveDirection = 0;
+  driveStart( _servoSpeedLeft, _servoSpeedRight );
   while ( _degreesTraveled < p_degrees )
   {
     processEncoders();
@@ -226,6 +238,7 @@ void driveRight( double p_degrees )
   _servoSpeedLeft = CCW_MIN_SPEED + _wheel_speed_trim;
   _servoSpeedRight = CCW_MIN_SPEED + _wheel_speed_trim;
   _driveDirection = 0;
+  driveStart( _servoSpeedLeft, _servoSpeedRight );
   while ( _degreesTraveled < p_degrees )
   { 
     processEncoders();
@@ -290,7 +303,8 @@ double Drive( double distance_in_meters, int stop_trigger_ir_range = 0, int look
       updateDriveTrim();
       _servoSpeedLeft = CCW_MIN_SPEED + _wheel_speed_trim;
       _servoSpeedRight = CW_MIN_SPEED + _wheel_speed_trim;
-      _driveDirection = 1;    
+      _driveDirection = 1;
+      driveStart( _servoSpeedLeft, _servoSpeedRight );
       return drive_helper_with_trigger( distance_in_meters, stop_trigger_ir_range );
     }
     else
@@ -299,6 +313,7 @@ double Drive( double distance_in_meters, int stop_trigger_ir_range = 0, int look
       _servoSpeedLeft = CW_MIN_SPEED + _wheel_speed_trim;
       _servoSpeedRight = CCW_MIN_SPEED + _wheel_speed_trim;
       _driveDirection = -1;
+      driveStart( _servoSpeedLeft, _servoSpeedRight );
       return drive_helper_with_trigger( distance_in_meters, stop_trigger_ir_range );
     }
   }
@@ -410,7 +425,7 @@ double wall_follow_right( double distance_in_meters, int wall_distance )
   _driveDirection = 1;
 
   lookRight();
-  
+  driveStart( _servoSpeedLeft, _servoSpeedRight );
   while ( _distanceTraveled < distance_in_meters )
   {
     _wall_follow_right_loop( distance_in_meters, wall_distance );
@@ -428,7 +443,8 @@ double wall_follow_left_trigger_helper( double distance_in_meters, int wall_rang
 
   lookLeft();
   processDistanceSensor();
-
+  driveStart( _servoSpeedLeft, _servoSpeedRight );
+  
   if ( stop_trigger_ir_range > 0 )
   {
     while ( irsensorValue < stop_trigger_ir_range )
@@ -455,6 +471,7 @@ double wall_follow_right_trigger_helper( double distance_in_meters, int wall_ran
 
   lookRight();
   processDistanceSensor();
+  driveStart( _servoSpeedLeft, _servoSpeedRight );
 
   if ( stop_trigger_ir_range > 0 )
   {
