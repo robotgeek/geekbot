@@ -19,7 +19,7 @@ Servo servoLeft, servoRight;      //wheel servo objects
 const int CW_MIN_SPEED = 1400;    //servo pulse in microseconds for slowest clockwise speed
 const int CCW_MIN_SPEED = 1600;   //servo pulse in microseconds for slowest counter-clockwise speed
 const int SERVO_STOP = 1500;        //servo pulse in microseconds for stopped servo
-const int ENCODER_VALUE_THRESHOLD = 512; //ADC input value for high signal
+const int ENCODER_VALUE_THRESHOLD = 300; //ADC input value for high signal (~1.47VDC)
 const int encoderCounts_per_revolution = 64; //Number of slices on wheel encoder
 
 const double meters_per_revolution = 2.0 * PI * WheelRadius; //Wheel circumference for distance traveled
@@ -57,15 +57,7 @@ unsigned long _last_timestamp = millis();
 void updateDriveTrim()
 {
   int knob_value = analogRead( ROTATION_KNOB_PIN );
-  _wheel_speed_trim = map( knob_value, 0, 1023, -30, 30 );
-  /*
-#ifdef USB_DEBUG
-  Serial.print( "Drive Trim: " );
-  Serial.print( _wheel_speed_trim );
-  Serial.print( " Raw: " );
-  Serial.println( knob_value );
-#endif
-*/
+  _wheel_speed_trim = map( knob_value, 0, 1023, -20, 20 );
 }
 
 void processEncoders()
@@ -73,7 +65,7 @@ void processEncoders()
   int rightEncoderValue = analogRead(RIGHT_ENCODER_PIN); // get encoder value
   int leftEncoderValue = analogRead(LEFT_ENCODER_PIN);
 
-  //Catch falling edge ( black stripe ) for right and left wheel speed encoders
+  //Catch falling edge ( white stripe ) for right and left wheel speed encoders
   if (_rightEncoderFalling && rightEncoderValue < ENCODER_VALUE_THRESHOLD)
   {
     ++_rightEncoderCount;
@@ -87,7 +79,7 @@ void processEncoders()
     _leftEncoderFalling = false;
   }
 
-  //Catch rising edge ( white stripe ) for right and left wheel speed encoders
+  //Catch rising edge ( black stripe ) for right and left wheel speed encoders
   if (_rightEncoderRising && rightEncoderValue > ENCODER_VALUE_THRESHOLD) 
   {
     ++_rightEncoderCount;     
