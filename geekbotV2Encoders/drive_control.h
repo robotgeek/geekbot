@@ -155,6 +155,19 @@ void processEncoders()
     }
     */
 
+    //Update wheel speeds based on rotation knob input
+    updateDriveTrim();
+    if ( _driveDirection == 1 )
+    {
+      _servoSpeedLeft = CCW_MIN_SPEED + _wheel_speed_trim * _driveDirection;
+      _servoSpeedRight = CW_MIN_SPEED + _wheel_speed_trim * _driveDirection;
+    }
+    else if ( _driveDirection == -1 )
+    {
+      _servoSpeedLeft = CW_MIN_SPEED + _wheel_speed_trim * _driveDirection;
+      _servoSpeedRight = CCW_MIN_SPEED + _wheel_speed_trim * _driveDirection;
+    }
+      
 #ifdef USB_DEBUG
     Serial.print( " PWM L: " );
     Serial.print( _servoSpeedLeft );
