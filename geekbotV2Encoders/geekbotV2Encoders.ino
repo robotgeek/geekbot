@@ -14,10 +14,10 @@
  *    Left LED - Digital Pin 7
  *    Right LED - Digital Pin 4
  *    Push Switch - Digital Pin 5
- *    Rotation Knob - Analog Pin 2
- *    Left IR Encoder - Analog Pin 3
- *    Right IR Encoder - Analog Pin 4
- *    SharpIR Module - Analog Pin 5
+ *    Rotation Knob - Analog Pin 0
+ *    Left IR Encoder - Analog Pin 1
+ *    Right IR Encoder - Analog Pin 2
+ *    SharpIR Module - Analog Pin 3
  *    
  *    Jumper for pins 9/10/11 should be set to 'VIN'
  *    Jumper for pins 3/5/6 should be set to '5V'
@@ -27,11 +27,17 @@
  *  External Resources:
  *
  ***********************************************************************************/
-
+#define LCD_DEBUG //Enabled output to I2C display
 #define USB_DEBUG //Enables serial.print() statements
 
 #include <Servo.h>     //include servo library to control continous turn servos
 #include <SharpIR.h>
+
+#ifdef LCD_DEBUG
+#include <Wire.h>                 //Load for I2C
+#include <LiquidCrystal_I2C.h>    //Load the LiquidCrystal I2C Library for the LCD Display
+LiquidCrystal_I2C lcd(0x27, 16, 2);  //I2C 2 Line LCD Screen
+#endif
 
 #include "sounds.h"
 #include "led_control.h"
@@ -41,6 +47,13 @@
 
 void waitForButtonPress()
 {
+#ifdef LCD_DEBUG
+  lcd.clear();
+  lcd.print( "Waiting for" );
+  lcd.setCursor(0, 1);
+  lcd.print( "button press!" );
+#endif
+
   playSound(WHISTLE);
 
   while ( digitalRead( SWITCH_PIN ) == LOW )
@@ -51,6 +64,13 @@ void waitForButtonPress()
 
 void waitForButtonRelease()
 {
+#ifdef LCD_DEBUG
+  lcd.clear();
+  lcd.print( "Waiting for" );
+  lcd.setCursor(0, 1);
+  lcd.print( "button release!" );
+#endif
+
   playSound(WHISTLE);
 
   while ( digitalRead( SWITCH_PIN ) == HIGH )
@@ -92,6 +112,15 @@ void setup()
   pinMode( SWITCH_PIN, INPUT );
 
   irsensorValue = getCurrentDistance();
+  
+#ifdef LCD_DEBUG
+  // initlaize the lcd object - this sets up all the variables and IIC setup for the LCD object to work
+  lcd.begin();
+  lcd.backlight();
+  // Print a message to the LCD.
+  lcd.print("Geekbot starting");
+  delay(1000);
+#endif
 }
 
 void corner_left_example()
@@ -176,14 +205,28 @@ void loop()
    * 
   \******************************************************/
 
+  waitForButtonPress();
+  Drive( 2.0 );
+  while(1);
+  
+  while( 0 )
+  {
+    Serial.print( analogRead( LEFT_ENCODER_PIN ) );
+    Serial.print( "\t" );
+    Serial.println( analogRead( RIGHT_ENCODER_PIN ) );
+    delay(50);
+  }
+  
   playSound(UP);
 
   waitForButtonPress();
 
-  while(1) //Square repeatability test
+  while(1) //Square test
   {
     Drive( 1.0 );
+    delay(1000); //Time to read LCD
     Rotate( 90 );
+    delay(1000); //Time to read LCD
   }
 
   /* Path from lab to kitchen */

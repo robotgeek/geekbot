@@ -5,10 +5,10 @@
 
 #define LEFT_SERVO_PIN 10
 #define RIGHT_SERVO_PIN 11
-#define LEFT_ENCODER_PIN 3
-#define RIGHT_ENCODER_PIN 4
+#define LEFT_ENCODER_PIN 1
+#define RIGHT_ENCODER_PIN 2
 
-#define ROTATION_KNOB_PIN 2 //For wheel speed trim adjustment
+#define ROTATION_KNOB_PIN 0 //For wheel speed trim adjustment
 
 #define WheelRadius 0.05 //meters (50 millimeters)
 #define WheelSpacing 0.195 //meters (195 millimeters)
@@ -19,7 +19,7 @@ Servo servoLeft, servoRight;      //wheel servo objects
 const int CW_MIN_SPEED = 1400;    //servo pulse in microseconds for slowest clockwise speed
 const int CCW_MIN_SPEED = 1600;   //servo pulse in microseconds for slowest counter-clockwise speed
 const int SERVO_STOP = 1500;        //servo pulse in microseconds for stopped servo
-const int ENCODER_VALUE_THRESHOLD = 300; //ADC input value for high signal (~1.47VDC)
+const int ENCODER_VALUE_THRESHOLD = 300; //ADC input value for high/low signal change (~1.47VDC)
 const int encoderCounts_per_revolution = 64; //Number of slices on wheel encoder
 
 const double meters_per_revolution = 2.0 * PI * WheelRadius; //Wheel circumference for distance traveled
@@ -44,9 +44,10 @@ int _rightEncoderCount = 0; //number of encoder ticks per interval during comman
 int _leftEncoderCount = 0; //number of encoder ticks per interval during command
 double _degreesTraveled = 0.0; //total degrees of rotation per command
 double _distanceTraveled = 0.0; //integrated velocity over time
-unsigned long _ticksTraveledLeft = 0; //total ticks traveled per command
-unsigned long _ticksTraveledRight = 0; //total ticks traveled per command
-
+unsigned long _ticksTraveledLeft = 0; //total ticks per interval during command
+unsigned long _ticksTraveledRight = 0; //total ticks per interval during command
+unsigned long _totalTicksRight = 0; //total ticks traveled per command
+unsigned long _totalTicksLeft = 0; //total ticks traveled per command
 int _driveDirection = 1; //Current driving direction for wheel speed correction
 
 unsigned long _last_speed_correction_timestamp = millis();
@@ -65,30 +66,34 @@ void processEncoders()
   int rightEncoderValue = analogRead(RIGHT_ENCODER_PIN); // get encoder value
   int leftEncoderValue = analogRead(LEFT_ENCODER_PIN);
 
-  //Catch falling edge ( white stripe ) for right and left wheel speed encoders
+  //Catch falling edge ( white stripe ) for right and left wheel encoders
   if (_rightEncoderFalling && rightEncoderValue < ENCODER_VALUE_THRESHOLD)
   {
     ++_rightEncoderCount;
+    ++_ticksTraveledRight;
     _rightEncoderRising = true;
     _rightEncoderFalling = false;
   }
   if (_leftEncoderFalling && leftEncoderValue < ENCODER_VALUE_THRESHOLD)
   {
-    ++_leftEncoderCount; 
+    ++_leftEncoderCount;
+    ++_ticksTraveledLeft;
     _leftEncoderRising = true;
     _leftEncoderFalling = false;
   }
 
-  //Catch rising edge ( black stripe ) for right and left wheel speed encoders
+  //Catch rising edge ( black stripe ) for right and left wheel encoders
   if (_rightEncoderRising && rightEncoderValue > ENCODER_VALUE_THRESHOLD) 
   {
-    ++_rightEncoderCount;     
+    ++_rightEncoderCount;
+    ++_ticksTraveledRight;
     _rightEncoderRising = false;
     _rightEncoderFalling = true;
   } 
   if (_leftEncoderRising && leftEncoderValue > ENCODER_VALUE_THRESHOLD) 
   {
-    ++_leftEncoderCount;     
+    ++_leftEncoderCount;
+    ++_ticksTraveledLeft;
     _leftEncoderRising = false;
     _leftEncoderFalling = true;
   }
@@ -97,29 +102,39 @@ void processEncoders()
   if ( _last_travel_timestamp + 20ul < millisnow )
   {
     _last_travel_timestamp = millisnow;
+
+    _distanceTraveled += (_ticksTraveledLeft + _ticksTraveledRight)/2.0 * meters_per_tick;
+    _degreesTraveled += (_ticksTraveledLeft + _ticksTraveledRight)/2.0 * degrees_per_tick;
+
+    _totalTicksLeft += _ticksTraveledLeft;
+    _totalTicksRight += _ticksTraveledRight;
     
-    _ticksTraveledLeft += _leftEncoderCount;
-    _ticksTraveledRight += _rightEncoderCount;
-    
-    _distanceTraveled += (_leftEncoderCount + _rightEncoderCount)/2.0 * meters_per_tick;
-    _degreesTraveled += (_leftEncoderCount + _rightEncoderCount)/2.0 * degrees_per_tick;
-    
-    _rightEncoderCount = 0;
-    _leftEncoderCount = 0;
+    _ticksTraveledLeft = 0;
+    _ticksTraveledRight = 0;
   }
 
-  //Compensate wheel speeed based on encoder feedback every 100 milliseconds
-  if ( _last_speed_correction_timestamp + 100ul < millisnow )
+  //Compensate wheel speeed based on encoder feedback every 500 milliseconds
+  if ( _last_speed_correction_timestamp + 500ul < millisnow )
   {
     _last_speed_correction_timestamp = millisnow;
 
 #ifdef USB_DEBUG
     Serial.print("Encoder Count L:");
-    Serial.print(_ticksTraveledLeft);
+    Serial.print(_leftEncoderCount);
     Serial.print(" R:");
-    Serial.print(_ticksTraveledLeft);
+    Serial.print(_rightEncoderCount);
 #endif
 
+#ifdef LCD_DEBUG
+    lcd.setCursor(0, 0);
+    lcd.print( "L" );
+    lcd.print( _leftEncoderCount );
+    lcd.setCursor(7, 0);
+    lcd.print( "R" );
+    lcd.print( _rightEncoderCount );
+#endif
+
+    /*
     //Wheel speed compensation
     if ( _driveDirection != 0 ) //Only compensate for FWD and REV ( +1, -1 )
     {
@@ -131,13 +146,14 @@ void processEncoders()
       {
         _servoSpeedLeft -= _driveDirection * 3;
       }
-      else
+      else if ( _driveDirection == 1 ) //TODO: This is to speed back up.. does not account for reverse
       {
-          updateDriveTrim();
-          _servoSpeedLeft = CCW_MIN_SPEED + _wheel_speed_trim * _driveDirection;
-          _servoSpeedRight = CW_MIN_SPEED + _wheel_speed_trim * _driveDirection;
+        updateDriveTrim();
+        _servoSpeedLeft = CCW_MIN_SPEED + _wheel_speed_trim * _driveDirection;
+        _servoSpeedRight = CW_MIN_SPEED + _wheel_speed_trim * _driveDirection;
       }
     }
+    */
 
 #ifdef USB_DEBUG
     Serial.print( " PWM L: " );
@@ -154,6 +170,17 @@ void processEncoders()
     Serial.print( " Degrees: " );
     Serial.println( _degreesTraveled );
 #endif
+
+#ifdef LCD_DEBUG
+    lcd.setCursor(0, 1);
+    lcd.print( "Dst:" );
+    lcd.print( _distanceTraveled );
+    lcd.print( "Deg:" );
+    lcd.print( _degreesTraveled );
+#endif
+
+    _rightEncoderCount = 0;
+    _leftEncoderCount = 0;
   }
 
   servoLeft.writeMicroseconds( _servoSpeedLeft );
@@ -178,6 +205,21 @@ double driveStop()
   Serial.println( _degreesTraveled );
 #endif
 
+#ifdef LCD_DEBUG
+  lcd.clear();
+  lcd.print( "L:" );
+  lcd.print( _totalTicksLeft );
+  lcd.setCursor(7, 0);
+  lcd.print( "R:" );
+  lcd.print( _totalTicksRight );
+  lcd.setCursor(0, 1);
+  lcd.print( "Dst:" );
+  lcd.print( _distanceTraveled );
+  lcd.print( "Deg:" );
+  lcd.print( _degreesTraveled );
+  delay( 1000 );
+#endif
+
   flashLEDs( 3, 250 );
 
   total_distance_traveled = _distanceTraveled;
@@ -186,6 +228,8 @@ double driveStop()
   _leftEncoderCount = 0;
   _ticksTraveledLeft = 0;
   _ticksTraveledRight = 0;
+  _totalTicksLeft = 0;
+  _totalTicksRight = 0;
   _distanceTraveled = 0.0;
   _degreesTraveled = 0.0;
 
@@ -194,6 +238,10 @@ double driveStop()
 
 void driveStart( int leftSpeed, int rightSpeed )
 {
+#ifdef LCD_DEBUG
+  lcd.clear();
+#endif
+
   int rampSpeedLeft = (SERVO_STOP - leftSpeed) / 2;
   int rampSpeedRight = (SERVO_STOP - rightSpeed) / 2;
   
@@ -211,6 +259,7 @@ double driveForward( double meters )
   while ( _distanceTraveled < meters )
   {
     processEncoders();
+    processLEDs();
   }
   return driveStop();
 }

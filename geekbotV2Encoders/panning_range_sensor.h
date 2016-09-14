@@ -2,7 +2,7 @@
 #define PANNING_RANGE_SENSOR_H
 
 const int SENSOR_PAN_PIN = 6;
-const int DISTANCE_SENSOR_PIN = 5;
+const int DISTANCE_SENSOR_PIN = 3;
 const int DISTANCE_TURN_GAIN = 9;
 
 const int IRMODEL = 1080;
