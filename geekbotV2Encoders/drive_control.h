@@ -19,7 +19,7 @@ Servo servoLeft, servoRight;      //wheel servo objects
 const int CW_MIN_SPEED = 1400;    //servo pulse in microseconds for slowest clockwise speed
 const int CCW_MIN_SPEED = 1600;   //servo pulse in microseconds for slowest counter-clockwise speed
 const int SERVO_STOP = 1500;        //servo pulse in microseconds for stopped servo
-const int ENCODER_VALUE_THRESHOLD = 300; //ADC input value for high/low signal change (~1.47VDC)
+const int ENCODER_VALUE_THRESHOLD = 250; //ADC input value for high/low signal change
 const int encoderCounts_per_revolution = 64; //Number of slices on wheel encoder
 
 const double meters_per_revolution = 2.0 * PI * WheelRadius; //Wheel circumference for distance traveled
@@ -52,6 +52,7 @@ int _driveDirection = 1; //Current driving direction for wheel speed correction
 
 unsigned long _last_speed_correction_timestamp = millis();
 unsigned long _last_travel_timestamp = millis();
+unsigned long _last_encoder_poll_timestamp = millis();
 
 void updateDriveTrim()
 {
@@ -62,40 +63,46 @@ void updateDriveTrim()
 void processEncoders()
 {
   unsigned long millisnow = millis();
+
+  //Checking encoder state every 5 milliseconds
+  if ( _last_encoder_poll_timestamp + 5ul < millisnow )
+  {
+    _last_encoder_poll_timestamp = millis();
+    
+    int rightEncoderValue = analogRead(RIGHT_ENCODER_PIN); // get encoder value
+    int leftEncoderValue = analogRead(LEFT_ENCODER_PIN);
   
-  int rightEncoderValue = analogRead(RIGHT_ENCODER_PIN); // get encoder value
-  int leftEncoderValue = analogRead(LEFT_ENCODER_PIN);
-
-  //Catch falling edge ( white stripe ) for right and left wheel encoders
-  if (_rightEncoderFalling && rightEncoderValue < ENCODER_VALUE_THRESHOLD)
-  {
-    ++_rightEncoderCount;
-    ++_ticksTraveledRight;
-    _rightEncoderRising = true;
-    _rightEncoderFalling = false;
-  }
-  if (_leftEncoderFalling && leftEncoderValue < ENCODER_VALUE_THRESHOLD)
-  {
-    ++_leftEncoderCount;
-    ++_ticksTraveledLeft;
-    _leftEncoderRising = true;
-    _leftEncoderFalling = false;
-  }
-
-  //Catch rising edge ( black stripe ) for right and left wheel encoders
-  if (_rightEncoderRising && rightEncoderValue > ENCODER_VALUE_THRESHOLD) 
-  {
-    ++_rightEncoderCount;
-    ++_ticksTraveledRight;
-    _rightEncoderRising = false;
-    _rightEncoderFalling = true;
-  } 
-  if (_leftEncoderRising && leftEncoderValue > ENCODER_VALUE_THRESHOLD) 
-  {
-    ++_leftEncoderCount;
-    ++_ticksTraveledLeft;
-    _leftEncoderRising = false;
-    _leftEncoderFalling = true;
+    //Catch falling edge ( white stripe ) for right and left wheel encoders
+    if (_rightEncoderFalling && rightEncoderValue < ENCODER_VALUE_THRESHOLD)
+    {
+      ++_rightEncoderCount;
+      ++_ticksTraveledRight;
+      _rightEncoderRising = true;
+      _rightEncoderFalling = false;
+    }
+    if (_leftEncoderFalling && leftEncoderValue < ENCODER_VALUE_THRESHOLD)
+    {
+      ++_leftEncoderCount;
+      ++_ticksTraveledLeft;
+      _leftEncoderRising = true;
+      _leftEncoderFalling = false;
+    }
+  
+    //Catch rising edge ( black stripe ) for right and left wheel encoders
+    if (_rightEncoderRising && rightEncoderValue > ENCODER_VALUE_THRESHOLD) 
+    {
+      ++_rightEncoderCount;
+      ++_ticksTraveledRight;
+      _rightEncoderRising = false;
+      _rightEncoderFalling = true;
+    } 
+    if (_leftEncoderRising && leftEncoderValue > ENCODER_VALUE_THRESHOLD) 
+    {
+      ++_leftEncoderCount;
+      ++_ticksTraveledLeft;
+      _leftEncoderRising = false;
+      _leftEncoderFalling = true;
+    }
   }
 
   //Integrate distance travel and degrees traveled every 20 milliseconds
@@ -127,33 +134,17 @@ void processEncoders()
 
 #ifdef LCD_DEBUG
     lcd.setCursor(0, 0);
-    lcd.print( "L" );
+    lcd.print( "L:" );
     lcd.print( _leftEncoderCount );
+    lcd.print( " " );
     lcd.setCursor(7, 0);
-    lcd.print( "R" );
+    lcd.print( "R:" );
     lcd.print( _rightEncoderCount );
+    lcd.print( " " );
+    lcd.setCursor(13, 0);
+    lcd.print( irsensorValue );
+    lcd.print( " " );
 #endif
-
-    /*
-    //Wheel speed compensation
-    if ( _driveDirection != 0 ) //Only compensate for FWD and REV ( +1, -1 )
-    {
-      if ( _leftEncoderCount - _rightEncoderCount > 1 )
-      {
-        _servoSpeedRight -= _driveDirection * 3;
-      }
-      else if ( _rightEncoderCount - _leftEncoderCount > 1 )
-      {
-        _servoSpeedLeft -= _driveDirection * 3;
-      }
-      else if ( _driveDirection == 1 ) //TODO: This is to speed back up.. does not account for reverse
-      {
-        updateDriveTrim();
-        _servoSpeedLeft = CCW_MIN_SPEED + _wheel_speed_trim * _driveDirection;
-        _servoSpeedRight = CW_MIN_SPEED + _wheel_speed_trim * _driveDirection;
-      }
-    }
-    */
 
     //Update wheel speeds based on rotation knob input
     updateDriveTrim();
@@ -222,9 +213,14 @@ double driveStop()
   lcd.clear();
   lcd.print( "L:" );
   lcd.print( _totalTicksLeft );
+  lcd.print( " " );
   lcd.setCursor(7, 0);
   lcd.print( "R:" );
   lcd.print( _totalTicksRight );
+  lcd.print( " " );
+  lcd.setCursor(13, 0);
+  lcd.print( irsensorValue );
+  lcd.print( " " );
   lcd.setCursor(0, 1);
   lcd.print( "Dst:" );
   lcd.print( _distanceTraveled );

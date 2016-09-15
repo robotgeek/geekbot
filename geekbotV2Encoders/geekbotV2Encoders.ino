@@ -204,10 +204,6 @@ void loop()
    * playSound( SoundID )
    * 
   \******************************************************/
-
-  waitForButtonPress();
-  Drive( 2.0 );
-  while(1);
   
   while( 0 )
   {
@@ -221,7 +217,7 @@ void loop()
 
   waitForButtonPress();
 
-  while(1) //Square test
+  while(0) //Square test
   {
     Drive( 1.0 );
     delay(1000); //Time to read LCD
