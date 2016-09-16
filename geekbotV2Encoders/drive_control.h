@@ -16,12 +16,11 @@
 Servo servoLeft, servoRight;      //wheel servo objects
 
 //Constants
-/* White bot
-const int FWD_LEFT = 1582; //CCW_left from calibration
-const int FWD_RIGHT = 1399; //CW_right from calibration
-const int REV_LEFT = 1399; //CCW_left from calibration
-const int REV_RIGHT = 1575; //CW_right from calibration
-*/
+//White bot
+//const int REV_LEFT = 1403; //CCW_left from calibration
+//const int FWD_RIGHT = 1400; //CW_right from calibration
+//const int FWD_LEFT = 1581; //CCW_left from calibration
+//const int REV_RIGHT = 1576; //CW_right from calibration
 //Black bot
 const int REV_LEFT = 1405; //CCW_left from calibration
 const int FWD_RIGHT = 1397; //CW_right from calibration

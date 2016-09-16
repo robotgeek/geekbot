@@ -1,3 +1,6 @@
+//TODO: If not using a schmitt trigger before calibrating average the high and low values to determine
+//      optimal left and right encoder thresholds. Enchances calibration. Ooh la la
+
 #define LEFT_SERVO_PIN 10
 #define RIGHT_SERVO_PIN 11
 #define LEFT_ENCODER_PIN 1

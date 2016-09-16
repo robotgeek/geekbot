@@ -27,8 +27,8 @@
  *  External Resources:
  *
  ***********************************************************************************/
-#define LCD_DEBUG //Enabled output to I2C display
-#define USB_DEBUG //Enables serial.print() statements
+//#define LCD_DEBUG //Enabled output to I2C display
+//#define USB_DEBUG //Enables serial.print() statements
 
 #include <Servo.h>     //include servo library to control continous turn servos
 #include <SharpIR.h>
@@ -204,6 +204,17 @@ void loop()
    * playSound( SoundID )
    * 
   \******************************************************/
+
+  if ( 0 ) //Perform push test.. push robot, observe encoders.. press button to reset
+  {
+    driveStop();
+    while(1)
+    {
+      _driveDirection = 0;
+      processEncoders();
+      if ( digitalRead( SWITCH_PIN ) == HIGH ) break;
+    } driveStop(); delay(5000); return;
+  }
   
   while( 0 )
   {
@@ -217,9 +228,34 @@ void loop()
 
   waitForButtonPress();
 
-  while(0) //Square test
+  if(1)
+  {
+    Rotate( 90 );
+    Rotate(-90 );
+    Rotate( -90 );
+    Rotate( 90 );
+    return;
+  }
+  if(0)
   {
     Drive( 1.0 );
+    waitForButtonPress();
+    Rotate( -180 );
+    return;
+  }
+  
+  while(0) //Turning test
+  {
+    Rotate( 90 );
+    delay(2000); //Time to read LCD
+    waitForButtonPress();
+    Rotate( -90 );
+    delay(2000); //Time to read LCD
+  }
+  
+  while(1) //Square test
+  {
+    Drive( 0.5 );
     delay(1000); //Time to read LCD
     Rotate( 90 );
     delay(1000); //Time to read LCD
