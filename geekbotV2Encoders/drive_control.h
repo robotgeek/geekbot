@@ -16,10 +16,20 @@
 Servo servoLeft, servoRight;      //wheel servo objects
 
 //Constants
-const int CW_MIN_SPEED = 1400;    //servo pulse in microseconds for slowest clockwise speed
-const int CCW_MIN_SPEED = 1600;   //servo pulse in microseconds for slowest counter-clockwise speed
+/* White bot
+const int FWD_LEFT = 1582; //CCW_left from calibration
+const int FWD_RIGHT = 1399; //CW_right from calibration
+const int REV_LEFT = 1399; //CCW_left from calibration
+const int REV_RIGHT = 1575; //CW_right from calibration
+*/
+//Black bot
+const int REV_LEFT = 1405; //CCW_left from calibration
+const int FWD_RIGHT = 1397; //CW_right from calibration
+const int FWD_LEFT = 1585; //CCW_left from calibration
+const int REV_RIGHT = 1576; //CW_right from calibration
+
 const int SERVO_STOP = 1500;        //servo pulse in microseconds for stopped servo
-const int ENCODER_VALUE_THRESHOLD = 250; //ADC input value for high/low signal change
+const int ENCODER_VALUE_THRESHOLD = 768; //ADC input value for high/low signal change
 const int encoderCounts_per_revolution = 64; //Number of slices on wheel encoder
 
 const double meters_per_revolution = 2.0 * PI * WheelRadius; //Wheel circumference for distance traveled
@@ -57,15 +67,16 @@ unsigned long _last_encoder_poll_timestamp = millis();
 void updateDriveTrim()
 {
   int knob_value = analogRead( ROTATION_KNOB_PIN );
-  _wheel_speed_trim = map( knob_value, 0, 1023, -20, 20 );
+  _wheel_speed_trim = map( knob_value, 0, 1023, -5, 5 );
 }
 
 void processEncoders()
 {
   unsigned long millisnow = millis();
 
+  if ( true )
   //Checking encoder state every 5 milliseconds
-  if ( _last_encoder_poll_timestamp + 5ul < millisnow )
+  //if ( _last_encoder_poll_timestamp + 5ul < millisnow )
   {
     _last_encoder_poll_timestamp = millis();
     
@@ -150,15 +161,10 @@ void processEncoders()
     updateDriveTrim();
     if ( _driveDirection == 1 )
     {
-      _servoSpeedLeft = CCW_MIN_SPEED + _wheel_speed_trim * _driveDirection;
-      _servoSpeedRight = CW_MIN_SPEED + _wheel_speed_trim * _driveDirection;
+      _servoSpeedLeft = FWD_LEFT + _wheel_speed_trim;
+      _servoSpeedRight = FWD_RIGHT + _wheel_speed_trim;
     }
-    else if ( _driveDirection == -1 )
-    {
-      _servoSpeedLeft = CW_MIN_SPEED + _wheel_speed_trim * _driveDirection;
-      _servoSpeedRight = CCW_MIN_SPEED + _wheel_speed_trim * _driveDirection;
-    }
-      
+    
 #ifdef USB_DEBUG
     Serial.print( " PWM L: " );
     Serial.print( _servoSpeedLeft );
@@ -251,18 +257,18 @@ void driveStart( int leftSpeed, int rightSpeed )
   lcd.clear();
 #endif
 
-  int rampSpeedLeft = (SERVO_STOP - leftSpeed) / 2;
-  int rampSpeedRight = (SERVO_STOP - rightSpeed) / 2;
+  //int rampSpeedLeft = (SERVO_STOP - leftSpeed) / 1.1;
+  //int rampSpeedRight = (SERVO_STOP - rightSpeed) / 1.1;
   
-  servoLeft.writeMicroseconds( SERVO_STOP + rampSpeedLeft );
-  servoRight.writeMicroseconds( SERVO_STOP + rampSpeedRight );
+  servoLeft.writeMicroseconds( leftSpeed );
+  servoRight.writeMicroseconds( rightSpeed );
 }
 
 double driveForward( double meters )
 {
   updateDriveTrim();
-  _servoSpeedLeft = CCW_MIN_SPEED + _wheel_speed_trim;
-  _servoSpeedRight = CW_MIN_SPEED + _wheel_speed_trim;
+  _servoSpeedLeft = FWD_LEFT + _wheel_speed_trim;
+  _servoSpeedRight = FWD_RIGHT + _wheel_speed_trim;
   _driveDirection = 1;
   driveStart( _servoSpeedLeft, _servoSpeedRight );
   while ( _distanceTraveled < meters )
@@ -276,8 +282,8 @@ double driveForward( double meters )
 double driveReverse( double meters )
 {
   updateDriveTrim();
-  _servoSpeedLeft = CW_MIN_SPEED + _wheel_speed_trim;
-  _servoSpeedRight = CCW_MIN_SPEED + _wheel_speed_trim;
+  _servoSpeedLeft = REV_LEFT;
+  _servoSpeedRight = REV_RIGHT;
   _driveDirection = -1;
   driveStart( _servoSpeedLeft, _servoSpeedRight );
   while ( _distanceTraveled < meters )
@@ -290,8 +296,8 @@ double driveReverse( double meters )
 void driveLeft( double p_degrees )
 {
   updateDriveTrim();
-  _servoSpeedLeft = CW_MIN_SPEED + _wheel_speed_trim;
-  _servoSpeedRight = CW_MIN_SPEED + _wheel_speed_trim;
+  _servoSpeedLeft = REV_LEFT;
+  _servoSpeedRight = FWD_RIGHT;
   _driveDirection = 0;
   driveStart( _servoSpeedLeft, _servoSpeedRight );
   while ( _degreesTraveled < p_degrees )
@@ -304,8 +310,8 @@ void driveLeft( double p_degrees )
 void driveRight( double p_degrees )
 {
   updateDriveTrim();
-  _servoSpeedLeft = CCW_MIN_SPEED + _wheel_speed_trim;
-  _servoSpeedRight = CCW_MIN_SPEED + _wheel_speed_trim;
+  _servoSpeedLeft = FWD_LEFT;
+  _servoSpeedRight = REV_RIGHT;
   _driveDirection = 0;
   driveStart( _servoSpeedLeft, _servoSpeedRight );
   while ( _degreesTraveled < p_degrees )
@@ -367,20 +373,20 @@ double Drive( double distance_in_meters, int stop_trigger_ir_range = 0, int look
   }
   if ( stop_trigger_ir_range != 0 )
   {
-    if ( distance_in_meters >= 0.0 )
+    if ( distance_in_meters >= 0.0 ) //Drive forward
     {
       updateDriveTrim();
-      _servoSpeedLeft = CCW_MIN_SPEED + _wheel_speed_trim;
-      _servoSpeedRight = CW_MIN_SPEED + _wheel_speed_trim;
+      _servoSpeedLeft = FWD_LEFT + _wheel_speed_trim;
+      _servoSpeedRight = FWD_RIGHT + _wheel_speed_trim;
       _driveDirection = 1;
       driveStart( _servoSpeedLeft, _servoSpeedRight );
       return drive_helper_with_trigger( distance_in_meters, stop_trigger_ir_range );
     }
-    else
+    else //Drive reverse
     {
       updateDriveTrim();
-      _servoSpeedLeft = CW_MIN_SPEED + _wheel_speed_trim;
-      _servoSpeedRight = CCW_MIN_SPEED + _wheel_speed_trim;
+      _servoSpeedLeft = REV_LEFT;
+      _servoSpeedRight = REV_RIGHT;
       _driveDirection = -1;
       driveStart( _servoSpeedLeft, _servoSpeedRight );
       return drive_helper_with_trigger( distance_in_meters, stop_trigger_ir_range );
@@ -414,18 +420,18 @@ bool _wall_follow_left_loop( double distance_in_meters, int wall_range )
   processDistanceSensor();
   if ( irsensorValue - wall_range >= 1 ) //If the wall is too far slow the left wheel
   {
-    _servoSpeedLeft = CCW_MIN_SPEED - DISTANCE_TURN_GAIN + _wheel_speed_trim;
-    _servoSpeedRight = CW_MIN_SPEED + _wheel_speed_trim;
+    _servoSpeedLeft = FWD_LEFT - DISTANCE_TURN_GAIN + _wheel_speed_trim;
+    _servoSpeedRight = FWD_RIGHT + _wheel_speed_trim;
   }
   else if ( wall_range - irsensorValue >= 1 ) //If the wall is too close slow down the right wheel.
   {
-    _servoSpeedLeft = CCW_MIN_SPEED + _wheel_speed_trim;
-    _servoSpeedRight = CW_MIN_SPEED + DISTANCE_TURN_GAIN + _wheel_speed_trim;
+    _servoSpeedLeft = FWD_LEFT + _wheel_speed_trim;
+    _servoSpeedRight = FWD_RIGHT + DISTANCE_TURN_GAIN + _wheel_speed_trim;
   }
   else //Drive straight
   {
-    _servoSpeedLeft = CCW_MIN_SPEED + _wheel_speed_trim;
-    _servoSpeedRight = CW_MIN_SPEED + _wheel_speed_trim;
+    _servoSpeedLeft = FWD_LEFT;
+    _servoSpeedRight = FWD_RIGHT;
   }
 
   processEncoders();
@@ -444,18 +450,18 @@ bool _wall_follow_right_loop( double distance_in_meters, int wall_range )
   processDistanceSensor();
   if ( irsensorValue - wall_range >= 1 ) //If the wall is too far slow the right wheel
   {
-    _servoSpeedLeft = CCW_MIN_SPEED + _wheel_speed_trim;
-    _servoSpeedRight = CW_MIN_SPEED + DISTANCE_TURN_GAIN + _wheel_speed_trim;
+    _servoSpeedLeft = FWD_LEFT + _wheel_speed_trim;
+    _servoSpeedRight = FWD_RIGHT + DISTANCE_TURN_GAIN + _wheel_speed_trim;
   }
   else if ( wall_range - irsensorValue >= 1 ) //If the wall is too close slow down the left wheel.
   {
-    _servoSpeedLeft = CCW_MIN_SPEED - DISTANCE_TURN_GAIN + _wheel_speed_trim;
-    _servoSpeedRight = CW_MIN_SPEED + _wheel_speed_trim;
+    _servoSpeedLeft = FWD_LEFT - DISTANCE_TURN_GAIN + _wheel_speed_trim;
+    _servoSpeedRight = FWD_RIGHT + _wheel_speed_trim;
   }
   else //Drive straight
   {
-    _servoSpeedLeft = CCW_MIN_SPEED + _wheel_speed_trim;
-    _servoSpeedRight = CW_MIN_SPEED + _wheel_speed_trim;
+    _servoSpeedLeft = FWD_LEFT + _wheel_speed_trim;
+    _servoSpeedRight = FWD_RIGHT + _wheel_speed_trim;
   }
 
   processEncoders();
@@ -472,8 +478,8 @@ bool _wall_follow_right_loop( double distance_in_meters, int wall_range )
 double wall_follow_left( double distance_in_meters, int wall_distance )
 {
   updateDriveTrim();
-  _servoSpeedLeft = CCW_MIN_SPEED + _wheel_speed_trim;
-  _servoSpeedRight = CW_MIN_SPEED + _wheel_speed_trim;
+  _servoSpeedLeft = FWD_LEFT + _wheel_speed_trim;
+  _servoSpeedRight = FWD_RIGHT + _wheel_speed_trim;
   _driveDirection = 1;
 
   lookLeft();
@@ -489,8 +495,8 @@ double wall_follow_left( double distance_in_meters, int wall_distance )
 double wall_follow_right( double distance_in_meters, int wall_distance )
 {
   updateDriveTrim();
-  _servoSpeedLeft = CCW_MIN_SPEED + _wheel_speed_trim;
-  _servoSpeedRight = CW_MIN_SPEED + _wheel_speed_trim;
+  _servoSpeedLeft = FWD_LEFT + _wheel_speed_trim;
+  _servoSpeedRight = FWD_RIGHT + _wheel_speed_trim;
   _driveDirection = 1;
 
   lookRight();
@@ -506,8 +512,8 @@ double wall_follow_right( double distance_in_meters, int wall_distance )
 double wall_follow_left_trigger_helper( double distance_in_meters, int wall_range, int stop_trigger_ir_range )
 {
   updateDriveTrim();
-  _servoSpeedLeft = CCW_MIN_SPEED + _wheel_speed_trim;
-  _servoSpeedRight = CW_MIN_SPEED + _wheel_speed_trim;
+  _servoSpeedLeft = FWD_LEFT + _wheel_speed_trim;
+  _servoSpeedRight = FWD_RIGHT + _wheel_speed_trim;
   _driveDirection = 1;
 
   lookLeft();
@@ -534,8 +540,8 @@ double wall_follow_left_trigger_helper( double distance_in_meters, int wall_rang
 double wall_follow_right_trigger_helper( double distance_in_meters, int wall_range, int stop_trigger_ir_range )
 {
   updateDriveTrim();
-  _servoSpeedLeft = CCW_MIN_SPEED + _wheel_speed_trim;
-  _servoSpeedRight = CW_MIN_SPEED + _wheel_speed_trim;
+  _servoSpeedLeft = FWD_LEFT + _wheel_speed_trim;
+  _servoSpeedRight = FWD_RIGHT + _wheel_speed_trim;
   _driveDirection = 1;
 
   lookRight();
