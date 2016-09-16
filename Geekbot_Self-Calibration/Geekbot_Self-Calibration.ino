@@ -21,18 +21,17 @@ bool cal_left_ccw = false;
 bool cal_right_cw = false;
 bool cal_right_ccw = false;
 
-//PWMs for Left and Right servos in both CW and CCW directions.
-//Set to ideal conditions
+//Starting PWMs for Left and Right servos in both CW and CCW directions.
 int CW_left = 1400;
 int CW_right = 1400;
-int CCW_left = 1600;
-int CCW_right = 1600;
+int CCW_left = 1580;
+int CCW_right = 1580;
 
 unsigned long last_integration = millis();
 unsigned long last_speed_adjustment_left = millis();
 unsigned long last_speed_adjustment_right = millis();
 
-const int ENCODER_VALUE_THRESHOLD = 250; //ADC input value for high/low signal change
+const int ENCODER_VALUE_THRESHOLD = 768; //ADC input value for high/low signal change
 const int encoderCounts_per_revolution = 64; //Number of slices on wheel encoder
 bool _rightEncoderRising = true;    //state of encoder counting
 bool _rightEncoderFalling = false;  //state of encoder counting
@@ -41,9 +40,9 @@ bool _leftEncoderFalling = false;   //state of encoder counting
 int _rightEncoderCount = 0; //number of encoder ticks per interval during command
 int _leftEncoderCount = 0; //number of encoder ticks per interval during command
 
-double desired_RPM = 23; //TODO: Refactor to desired_ticks
-double rpm_left = desired_RPM; //TODO: Refactor
-double rpm_right = desired_RPM; //TODO: Refactor
+double desired_rate = 20.0; //Ticks per second
+double rate_left = 0.0;
+double rate_right = 0.0;
 
 void setup()
 {
@@ -70,18 +69,18 @@ void loop()
     {
       last_integration = millis();
       
-      if ( !cal_left_cw ) rpm_left = ( 0.9 * rpm_left ) + ( 0.1 * (_leftEncoderCount) );
-      if ( !cal_right_cw ) rpm_right = ( 0.9 * rpm_right ) + ( 0.1 * (_rightEncoderCount ) );
+      if ( !cal_left_cw ) rate_left = ( 0.8 * rate_left ) + ( 0.2 * (_leftEncoderCount) );
+      if ( !cal_right_cw ) rate_right = ( 0.8 * rate_right ) + ( 0.2 * (_rightEncoderCount ) );
       _leftEncoderCount = 0;
       _rightEncoderCount = 0;
 
       lcd.clear();
       lcd.print( "L:" );
-      lcd.print( rpm_left );
+      lcd.print( rate_left );
       lcd.print( " " );
       lcd.setCursor(8, 0);
       lcd.print( "R:" );
-      lcd.print( rpm_right );
+      lcd.print( rate_right );
       lcd.setCursor(0, 1);
       lcd.print( CW_left );
       lcd.setCursor(8, 1);
@@ -93,10 +92,10 @@ void loop()
       lcd.setCursor(13, 1);
       if ( !cal_right_cw ) lcd.print( (millis() - last_speed_adjustment_right) / 1000 );
 //LEFT
-      if ( last_speed_adjustment_left + CORRECTION_DELAY < millis() && round(rpm_left) != desired_RPM && !cal_left_cw )
+      if ( last_speed_adjustment_left + CORRECTION_DELAY < millis() && round(rate_left) != desired_rate && !cal_left_cw )
       {
         last_speed_adjustment_left = millis();
-        if ( rpm_left < desired_RPM )
+        if ( rate_left < desired_rate )
         {
           --CW_left;
         }
@@ -106,16 +105,17 @@ void loop()
         }
         servo_left.writeMicroseconds( CW_left );
       }
-      if ( last_speed_adjustment_left + SATISFIED_DELAY < millis() && round(rpm_left) == desired_RPM )
+      if ( last_speed_adjustment_left + SATISFIED_DELAY < millis() && round(rate_left) == desired_rate )
       {
         cal_left_cw = true;
         servo_left.writeMicroseconds( 1500 ); //Stop servo
+        rate_left = 0.0;
       }
 //RIGHT
-      if ( last_speed_adjustment_right + CORRECTION_DELAY < millis() && round(rpm_right) != desired_RPM && !cal_right_cw )
+      if ( last_speed_adjustment_right + CORRECTION_DELAY < millis() && round(rate_right) != desired_rate && !cal_right_cw )
       {
         last_speed_adjustment_right = millis();
-        if ( rpm_right < desired_RPM )
+        if ( rate_right < desired_rate )
         {
           --CW_right;
         }
@@ -125,10 +125,11 @@ void loop()
         }
         servo_right.writeMicroseconds( CW_right );
       }
-      if ( last_speed_adjustment_right + SATISFIED_DELAY < millis() && round(rpm_right) == desired_RPM )
+      if ( last_speed_adjustment_right + SATISFIED_DELAY < millis() && round(rate_right) == desired_rate )
       {
         cal_right_cw = true;
         servo_right.writeMicroseconds( 1500 ); //Stop servo
+        rate_right = 0.0;
       }
 //DONE
       if ( cal_left_cw == true && cal_right_cw == true )
@@ -146,18 +147,18 @@ void loop()
     {
       last_integration = millis();
       
-      if ( !cal_left_ccw ) rpm_left = ( 0.9 * rpm_left ) + ( 0.1 * (_leftEncoderCount) );
-      if ( !cal_right_ccw ) rpm_right = ( 0.9 * rpm_right ) + ( 0.1 * (_rightEncoderCount ) );
+      if ( !cal_left_ccw ) rate_left = ( 0.9 * rate_left ) + ( 0.1 * (_leftEncoderCount) );
+      if ( !cal_right_ccw ) rate_right = ( 0.9 * rate_right ) + ( 0.1 * (_rightEncoderCount ) );
       _leftEncoderCount = 0;
       _rightEncoderCount = 0;
 
       lcd.clear();
       lcd.print( "L:" );
-      lcd.print( rpm_left );
+      lcd.print( rate_left );
       lcd.print( " " );
       lcd.setCursor(8, 0);
       lcd.print( "R:" );
-      lcd.print( rpm_right );
+      lcd.print( rate_right );
       lcd.setCursor(0, 1);
       lcd.print( CCW_left );
       lcd.setCursor(8, 1);
@@ -169,10 +170,10 @@ void loop()
       lcd.setCursor(13, 1);
       if ( !cal_right_ccw ) lcd.print( (millis() - last_speed_adjustment_right) / 1000 );
 //LEFT
-      if ( last_speed_adjustment_left + CORRECTION_DELAY < millis() && round(rpm_left) != desired_RPM && !cal_left_ccw )
+      if ( last_speed_adjustment_left + CORRECTION_DELAY < millis() && round(rate_left) != desired_rate && !cal_left_ccw )
       {
         last_speed_adjustment_left = millis();
-        if ( rpm_left > desired_RPM )
+        if ( rate_left > desired_rate )
         {
           --CCW_left;
         }
@@ -182,16 +183,16 @@ void loop()
         }
         servo_left.writeMicroseconds( CCW_left );
       }
-      if ( last_speed_adjustment_left + SATISFIED_DELAY < millis() && round(rpm_left) == desired_RPM )
+      if ( last_speed_adjustment_left + SATISFIED_DELAY < millis() && round(rate_left) == desired_rate )
       {
         cal_left_ccw = true;
         servo_left.writeMicroseconds( 1500 ); //Stop servo
       }
 //RIGHT
-      if ( last_speed_adjustment_right + CORRECTION_DELAY < millis() && round(rpm_right) != desired_RPM && !cal_right_ccw )
+      if ( last_speed_adjustment_right + CORRECTION_DELAY < millis() && round(rate_right) != desired_rate && !cal_right_ccw )
       {
         last_speed_adjustment_right = millis();
-        if ( rpm_right > desired_RPM )
+        if ( rate_right > desired_rate )
         {
           --CCW_right;
         }
@@ -201,7 +202,7 @@ void loop()
         }
         servo_right.writeMicroseconds( CCW_right );
       }
-      if ( last_speed_adjustment_right + SATISFIED_DELAY < millis() && round(rpm_right) == desired_RPM )
+      if ( last_speed_adjustment_right + SATISFIED_DELAY < millis() && round(rate_right) == desired_rate )
       {
         cal_right_ccw = true;
         servo_right.writeMicroseconds( 1500 ); //Stop servo
