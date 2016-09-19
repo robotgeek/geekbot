@@ -47,6 +47,44 @@ double desired_rate = 20.0; //Ticks per second
 double rate_left = 0.0;
 double rate_right = 0.0;
 
+
+#include <EEPROM.h>
+#define CONFIG_VERSION "RG1"
+#define CONFIG_START 32
+struct StoreStruct {
+  // This is for mere detection if they are your settings
+  char version[4];
+  // The variables of your settings
+  int left_cw, left_ccw, right_cw, right_ccw;
+} CalibrationResults = {
+  CONFIG_VERSION,
+  // The default values
+  1500, 1500, 1500, 1500
+};
+void saveCalibration()
+{
+  for (unsigned int t=0; t<sizeof(CalibrationResults); t++)
+  { // writes to EEPROM
+    EEPROM.write(CONFIG_START + t, *((char*)&CalibrationResults + t));
+    // and verifies the data
+    if (EEPROM.read(CONFIG_START + t) != *((char*)&CalibrationResults + t))
+    {
+      // error writing to EEPROM
+      lcd.clear();
+      lcd.print( "Error saving." );
+      while(1);
+    }
+  }
+
+  delay( 3000 );
+  lcd.clear();
+  lcd.print( "Calibration");
+  lcd.setCursor(0, 1);
+  lcd.print( "Completed!!" );
+  while(1);
+}
+
+
 void setup()
 {
   servo_left.attach(LEFT_SERVO_PIN);
@@ -230,6 +268,14 @@ void loop()
     lcd.print( CCW_left );
     lcd.setCursor(8, 1);
     lcd.print( CCW_right );
+
+    CalibrationResults.left_cw = CW_left;
+    CalibrationResults.left_ccw = CCW_left;
+    CalibrationResults.right_cw = CW_right;
+    CalibrationResults.right_ccw = CCW_right;
+
+    saveCalibration();
+    
     while( 1 );
   }
   

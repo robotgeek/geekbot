@@ -15,17 +15,10 @@
 
 Servo servoLeft, servoRight;      //wheel servo objects
 
-//Constants
-//White bot
-//const int REV_LEFT = 1403; //CCW_left from calibration
-//const int FWD_RIGHT = 1400; //CW_right from calibration
-//const int FWD_LEFT = 1581; //CCW_left from calibration
-//const int REV_RIGHT = 1576; //CW_right from calibration
-//Black bot
-const int REV_LEFT = 1405; //CCW_left from calibration
-const int FWD_RIGHT = 1397; //CW_right from calibration
-const int FWD_LEFT = 1585; //CCW_left from calibration
-const int REV_RIGHT = 1576; //CW_right from calibration
+int REV_LEFT = 1500; //CCW_left from calibration
+int FWD_RIGHT = 1500; //CW_right from calibration
+int FWD_LEFT = 1500; //CCW_left from calibration
+int REV_RIGHT = 1500; //CW_right from calibration
 
 const int SERVO_STOP = 1500;        //servo pulse in microseconds for stopped servo
 const int ENCODER_VALUE_THRESHOLD = 768; //ADC input value for high/low signal change
@@ -62,6 +55,46 @@ int _driveDirection = 1; //Current driving direction for wheel speed correction
 unsigned long _last_speed_correction_timestamp = millis();
 unsigned long _last_travel_timestamp = millis();
 unsigned long _last_encoder_poll_timestamp = millis();
+
+#include <EEPROM.h>
+#define CONFIG_VERSION "RG1"
+#define CONFIG_START 32
+struct StoreStruct {
+  // This is for mere detection if they are your settings
+  char version[4];
+  // The variables of your settings
+  int left_cw, left_ccw, right_cw, right_ccw;
+} CalibrationResults = {
+  CONFIG_VERSION,
+  // The default values
+  1500, 1500, 1500, 1500
+};
+void loadCalibration() {
+  // To make sure there are settings, and they are YOURS!
+  // If nothing is found it will use the default settings.
+  if (EEPROM.read(CONFIG_START + 0) == CONFIG_VERSION[0] &&
+      EEPROM.read(CONFIG_START + 1) == CONFIG_VERSION[1] &&
+      EEPROM.read(CONFIG_START + 2) == CONFIG_VERSION[2])
+  {
+    for (unsigned int t=0; t<sizeof(CalibrationResults); t++)
+      *((char*)&CalibrationResults + t) = EEPROM.read(CONFIG_START + t);
+  } 
+  else 
+  {
+    // settings aren't valid!
+    while(1)
+    {
+      sound_down();
+      Serial.println( "Calibration load error" );
+      delay(1000);
+    }
+  }
+
+  REV_LEFT = CalibrationResults.left_cw; //CW_left from calibration
+  FWD_RIGHT = CalibrationResults.right_cw; //CW_right from calibration
+  FWD_LEFT = CalibrationResults.left_ccw; //CCW_left from calibration
+  REV_RIGHT = CalibrationResults.right_ccw; //CCW_right from calibration
+}
 
 void updateDriveTrim()
 {

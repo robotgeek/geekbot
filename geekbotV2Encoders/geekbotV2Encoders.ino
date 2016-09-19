@@ -27,8 +27,8 @@
  *  External Resources:
  *
  ***********************************************************************************/
-//#define LCD_DEBUG //Enabled output to I2C display
-//#define USB_DEBUG //Enables serial.print() statements
+#define LCD_DEBUG //Enabled output to I2C display
+#define USB_DEBUG //Enables serial.print() statements
 
 #include <Servo.h>     //include servo library to control continous turn servos
 #include <SharpIR.h>
@@ -121,12 +121,14 @@ void setup()
   lcd.print("Geekbot starting");
   delay(1000);
 #endif
+
+  loadCalibration(); //Load geekbot wheel speed calibration from eeprom
 }
 
 void corner_left_example()
 {
   Drive( 0.45 );
-  Rotate( -85 );
+  Rotate( -90 );
   Drive( 0.45 );
   lookLeft();
 }
@@ -134,7 +136,7 @@ void corner_left_example()
 void corner_right_example()
 {
   Drive( 0.45 );
-  Rotate( 85 );
+  Rotate( 90 );
   Drive( 0.45 );
   lookRight();
 }
@@ -228,13 +230,12 @@ void loop()
 
   waitForButtonPress();
 
-  if(1)
+  while(0)
   {
     Rotate( 90 );
     Rotate(-90 );
     Rotate( -90 );
     Rotate( 90 );
-    return;
   }
   if(0)
   {
@@ -253,7 +254,7 @@ void loop()
     delay(2000); //Time to read LCD
   }
   
-  while(1) //Square test
+  while(0) //Square test
   {
     Drive( 0.5 );
     delay(1000); //Time to read LCD
