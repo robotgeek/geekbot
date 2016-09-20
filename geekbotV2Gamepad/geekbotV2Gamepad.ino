@@ -1,5 +1,5 @@
 /***********************************************************************************
- *                         RobotGeek Geekbot V2 Rover
+ *                         RobotGeek Geekbot V2 Gamepad
  *  __________________
  *   |              |
  *   |     ___      |
@@ -11,6 +11,7 @@
  *
  *  Wiring
  *
+ *    Rotation Knob - Analog Pin 0
  *    Left Servo - Digital Pin 10
  *    Right Servo - Digital Pin 11
  *    Buzzer - Digital Pin 12
@@ -22,9 +23,7 @@
  *    Jumper for pins 3/5/6 should be set to '5V'
  *
  *  Control Behavior:
- *  Pressing a directional button on the remote starts the Geekbot rolling in that direction.
- *  Pressing Enter/Select, or any unassigned button causes the Geekbot to stop.
- *  Pressing buttons 1-9 selects the speed
+ *  Pressing directional button(s) on the gamepad starts the Geekbot rolling in that direction.
  *
  *  External Resources
  *
