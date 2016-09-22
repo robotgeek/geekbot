@@ -195,8 +195,6 @@ void loop()
       {
         SoundPlay(UHOH);
       }
-
-      delay(250);
       my_gamepad.update_button_states();
     }
     if ( my_gamepad.button_press_tb() )
