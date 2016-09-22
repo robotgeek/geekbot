@@ -31,6 +31,7 @@
 
 //Includes
 #include <Servo.h>     //include servo library to control continous turn servos
+#include "Sounds.h"
 #include "Gamepad.h"
 unsigned long last_gamepad_command = millis();
 
@@ -44,14 +45,26 @@ const int RIGHT_SERVO_PIN = 11;
 
 //Servo control
 const int SERVO_STOP = 1500; //servo pulse in microseconds for stopped servo
-const int CW_MIN_SPEED = 1400;      //servo pulse in microseconds for slowest clockwise speed
-const int CW_MAX_SPEED = 1000;      //servo pulse in microseconds for fastest clockwise speed
-const int CCW_MIN_SPEED = 1600;      //servo pulse in microseconds for slowest counter-clockwise speed
-const int CCW_MAX_SPEED = 2000;      //servo pulse in microseconds for fastest counter-clockwise speed
-const int SERVO_TURN_SPEED = 350;
+
+const int CW_MIN_SPEED = 1400;
+const int CW_MAX_SPEED = 1250;
+
+const int CCW_MIN_SPEED = 1580;
+const int CCW_MAX_SPEED = 1750;
+
+int SERVO_DRIVE_TURN_SPEED = 70; //For turning while driving (controller selectable)
+const int SERVO_TURN_SPEED = 50; //For in place turning
+
 Servo servoLeft, servoRight;      //wheel servo objects
 int servoSpeedLeft = SERVO_STOP;   //left servo speed.
 int servoSpeedRight = SERVO_STOP;  //right servo speed.
+
+int leftFwdSpeed = CCW_MAX_SPEED;
+int leftRevSpeed = CW_MAX_SPEED;
+
+int rightFwdSpeed = CW_MAX_SPEED;
+int rightRevSpeed = CCW_MAX_SPEED;
+
 
 //Trim testing
 int _wheel_speed_trim = 0;
@@ -78,6 +91,8 @@ void setup()
 
   GamepadEnable();
 
+  SoundEnable();
+
   Serial.println("Geekbot V2 Start");
 }
 
@@ -93,24 +108,24 @@ void loop()
     if ( my_gamepad.button_press_up() )
     {
       Serial.print( "UP" );
-      servoSpeedLeft = CCW_MAX_SPEED + _wheel_speed_trim;
-      servoSpeedRight = CW_MAX_SPEED + _wheel_speed_trim;
+      servoSpeedLeft = leftFwdSpeed + _wheel_speed_trim;
+      servoSpeedRight = rightFwdSpeed + _wheel_speed_trim;
       if ( my_gamepad.button_press_left() )
       {
         Serial.print( " and LEFT" );
-        servoSpeedLeft -= SERVO_TURN_SPEED;
+        servoSpeedLeft -= SERVO_DRIVE_TURN_SPEED;
       }
       if ( my_gamepad.button_press_right() )
       {
         Serial.print( " and RIGHT" );
-        servoSpeedRight += SERVO_TURN_SPEED;
+        servoSpeedRight += SERVO_DRIVE_TURN_SPEED;
       }
     }
     else if ( my_gamepad.button_press_down() )
     {
       Serial.print( "DOWN" );
-      servoSpeedLeft = CW_MAX_SPEED - _wheel_speed_trim;
-      servoSpeedRight = CCW_MAX_SPEED - _wheel_speed_trim;
+      servoSpeedLeft = leftRevSpeed;
+      servoSpeedRight = rightRevSpeed;
       if ( my_gamepad.button_press_left() )
       {
         Serial.print( " and LEFT" );
@@ -125,14 +140,14 @@ void loop()
     else if ( my_gamepad.button_press_left() )
     {
       Serial.print( "LEFT" );
-      servoSpeedLeft -= SERVO_TURN_SPEED;
-      servoSpeedRight -= SERVO_TURN_SPEED;
+      servoSpeedLeft = CW_MIN_SPEED - SERVO_TURN_SPEED;
+      servoSpeedRight = CW_MIN_SPEED - SERVO_TURN_SPEED;
     }
     else if ( my_gamepad.button_press_right() )
     {
       Serial.print( "RIGHT" );
-      servoSpeedLeft += SERVO_TURN_SPEED;
-      servoSpeedRight += SERVO_TURN_SPEED;
+      servoSpeedLeft = CCW_MIN_SPEED + SERVO_TURN_SPEED;
+      servoSpeedRight = CCW_MIN_SPEED + SERVO_TURN_SPEED ;
     }
 
     if ( my_gamepad.button_press_start() )
@@ -144,10 +159,46 @@ void loop()
       Serial.print( "SELECT" );
     }
 
-    if ( my_gamepad.button_press_b() ) Serial.print( "B" );
-    if ( my_gamepad.button_press_tb() ) Serial.print( "TB" );
-    if ( my_gamepad.button_press_a() ) Serial.print( "A" );
-    if ( my_gamepad.button_press_ta() ) Serial.print( "TA" );
+    if ( my_gamepad.button_press_b() )
+    {
+      Serial.print( "B" );
+      if ( SERVO_DRIVE_TURN_SPEED < 10 )
+      {
+        SERVO_DRIVE_TURN_SPEED -= 10;
+        SoundPlay(DOWN);
+      }
+      else
+      {
+        SoundPlay(UHOH);
+      }
+
+      delay(250);
+      my_gamepad.update_button_states();
+    }
+    if ( my_gamepad.button_press_tb() )
+    {
+      Serial.print( "TB" );
+    }
+    if ( my_gamepad.button_press_a() )
+    {
+      Serial.print( "A" );
+    }
+    if ( my_gamepad.button_press_ta() )
+    {
+      Serial.print( "TA" );
+      if ( SERVO_DRIVE_TURN_SPEED < 200 )
+      {
+        SERVO_DRIVE_TURN_SPEED += 10;
+        SoundPlay(UP);
+      }
+      else
+      {
+        SoundPlay(UHOH);
+      }
+
+      delay(250);
+      my_gamepad.update_button_states();
+    }
 
     Serial.print( " button" );
 
