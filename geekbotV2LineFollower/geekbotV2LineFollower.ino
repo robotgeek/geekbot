@@ -23,10 +23,7 @@
  *    Jumper for pins 3/5/6 should be set to '5V'
  *
  *  Control Behavior:
- *  Pressing directional button(s) on the gamepad will start the Geekbot rolling in that direction.
- *  Pressing Select will trim the robot's drive to the left, Start will trim the drive right.
- *  Pressing B and TA (Left and Right) buttons will decrease or increase the amount of turn while driving.
- *  Pressing A and TB (Bottom and Top) buttons will decrease or increase the drive speed.
+ *  Put it on a line!
  *
  *  External Resources
  *
@@ -49,6 +46,8 @@ SensorBar mySensorBar(SX1509_ADDRESS);
 
 uint8_t state;
 
+const int BLIND_DRIVE_TIME = 700; //milliseconds
+const int BLIND_TURN_TIME = 250; //milliseconds
 //Includes
 #include <Servo.h>     //include servo library to control continous turn servos
 #include "Sounds.h"
@@ -73,11 +72,11 @@ const int CW_MAX_SPEED = 1250;
 const int CCW_MED_SPEED = 1660;
 const int CW_MED_SPEED = 1300;
 
-int SERVO_DRIVE_TURN_SPEED = 70; //For turning while driving (controller selectable)
+
 const int SERVO_TURN_SPEED_HIGH = 50;
 const int SERVO_TURN_SPEED_LOW = 25;
+int SERVO_DRIVE_TURN_SPEED = 70; //For turning while driving
 int SERVO_TURN_SPEED = SERVO_TURN_SPEED_LOW; //For in place turning. Applied to CW and CCW_MIN_SPEEDs
-
 
 Servo servoLeft, servoRight;      //wheel servo objects
 
@@ -97,15 +96,14 @@ enum SpeedSelections
   SPEED_MED,
   SPEED_MAX
 };
-
-int currentSpeed = SPEED_MAX;
+int currentSpeed = SPEED_MIN;
 
 //Trim testing
 int _wheel_speed_trim = 0;
 void updateDriveTrim()
 {
   int knob_value = analogRead( TRIM_KNOB_PIN );
-  _wheel_speed_trim = map( knob_value, 0, 1023, -100, 100 );
+  _wheel_speed_trim = map( knob_value, 0, 1023, -50, 50 );
 }
 
 int _wheel_speed_trim_override = 0;
@@ -132,8 +130,6 @@ void setup()
   {
     Serial.println("sx1509 IC communication FAILED!");
   }
-  Serial.println();
-
 
   // put your setup code here, to run once:
   pinMode(LED_LEFT_PIN, OUTPUT);
@@ -163,7 +159,10 @@ void intersectionForward()
 }
 void intersectionRight()
 {
+  motorsForward();
+  delay(BLIND_DRIVE_TIME); //time to move forward onto intersection
   motorsRotateRight();
+  delay(BLIND_TURN_TIME); //time to get off the line
   while( true )
   {
     if( mySensorBar.getDensity() < 3 )
@@ -179,7 +178,10 @@ void intersectionRight()
 }
 void intersectionLeft()
 {
+  motorsForward();
+  delay(BLIND_DRIVE_TIME); //time to move forward onto intersection
   motorsRotateLeft();
+  delay(BLIND_TURN_TIME); //time to get off the line
   while( true )
   {
     if( mySensorBar.getDensity() < 3 )
@@ -193,6 +195,7 @@ void intersectionLeft()
     }
   }
 }
+
 int currentIntersection = 0;
 void intersectionDetected()
 {
@@ -201,15 +204,31 @@ void intersectionDetected()
   {
   case 1:
     SoundPlay(UP);
-    intersectionForward();
+    intersectionLeft();
     break;
   case 2:
     SoundPlay(DOWN);
     intersectionRight();
     break;
   case 3:
-    SoundPlay(LAUGH);
+    SoundPlay(DOWN);
+    intersectionRight();
+    break;
+  case 4:
+    SoundPlay(UP);
     intersectionLeft();
+    break;
+  case 5:
+    SoundPlay(LAUGH);
+    intersectionForward();
+    break;
+  case 6:
+    SoundPlay(UP);
+    intersectionLeft();
+    break;
+  case 7:
+    SoundPlay(DOWN);
+    intersectionRight();
     break;
   default:
     motorsStop();
@@ -295,7 +314,7 @@ void loop()
         nextState = GO_RIGHT;
       }
     }
-    else //all 8 on means we are at black line intersection
+    else //all 8 on means we found an intersection
     {
       nextState = GO_INTERSECTION;
     }
@@ -314,6 +333,11 @@ void loop()
     break;
   default:
     motorsStop();       // Stops both motors
+    while(1)
+    {
+      SoundPlay(WHISTLE);
+      delay(1000);
+    }
     break;
   }
   state = nextState;
