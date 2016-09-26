@@ -173,6 +173,12 @@ void intersectionRight()
       {
         break; //Stop rotating when line is detected in middle.
       }
+
+      //Detecting wide tape
+      if ( lastBarRawValue == 0x1C || lastBarRawValue == 0x38 )
+      {
+        break; //Stop rotating when line is detected in middle.
+      }
     }
   }
 }
@@ -189,6 +195,12 @@ void intersectionLeft()
       uint8_t lastBarRawValue = mySensorBar.getRaw();
 
       if ( lastBarRawValue == 0x08 || lastBarRawValue == 0x18 || lastBarRawValue == 0x10 )
+      {
+        break; //Stop rotating when line is detected in middle.
+      }
+
+      //Detecting wide tape
+      if ( lastBarRawValue == 0x1C || lastBarRawValue == 0x38 )
       {
         break; //Stop rotating when line is detected in middle.
       }
