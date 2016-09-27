@@ -23,7 +23,10 @@
  *    Jumper for pins 3/5/6 should be set to '5V'
  *
  *  Control Behavior:
- *  Pressing directional button(s) on the gamepad starts the Geekbot rolling in that direction.
+ *  Pressing directional button(s) on the gamepad will start the Geekbot rolling in that direction.
+ *  Pressing Select will trim the robot's drive to the left, Start will trim the drive right.
+ *  Pressing B and TA (Left and Right) buttons will decrease or increase the amount of turn while driving.
+ *  Pressing A and TB (Bottom and Top) buttons will decrease or increase the drive speed.
  *
  *  External Resources
  *
