@@ -6,9 +6,6 @@
  *  _|____/___\ ____|_
  *   \_/  \___/   \_/
  *
- *  The
- *
- *
  *  Wiring
  *
  *    Rotation Knob - Analog Pin 0
@@ -23,7 +20,8 @@
  *    Jumper for pins 3/5/6 should be set to '5V'
  *
  *  Control Behavior:
- *  Put it on a line!
+ *
+ *    Put it on a line!
  *
  *  External Resources
  *
@@ -44,10 +42,12 @@ SensorBar mySensorBar(SX1509_ADDRESS);
 #define GO_RIGHT 4
 #define GO_INTERSECTION 5
 
-uint8_t state;
+uint8_t lineFollowingState; //State of line following
 
-const int BLIND_DRIVE_TIME = 700; //milliseconds
-const int BLIND_TURN_TIME = 250; //milliseconds
+//Intersection constants
+const int BLIND_DRIVE_TIME = 700; //milliseconds to drive forward at intersection
+const int BLIND_TURN_TIME = 250; //milliseconds to turn without checking sensor (time to move off line)
+
 //Includes
 #include <Servo.h>     //include servo library to control continous turn servos
 #include "Sounds.h"
@@ -71,8 +71,7 @@ const int CW_MAX_SPEED = 1250;
 //Experimental speed constant
 const int CCW_MED_SPEED = 1660;
 const int CW_MED_SPEED = 1300;
-
-
+//Turning speed constants
 const int SERVO_TURN_SPEED_HIGH = 50;
 const int SERVO_TURN_SPEED_LOW = 25;
 int SERVO_DRIVE_TURN_SPEED = 70; //For turning while driving
@@ -86,7 +85,6 @@ int servoSpeedRight = SERVO_STOP;  //right servo speed.
 //Wheel speeds from "gear" selection
 int leftFwdSpeed = CCW_MIN_SPEED;
 int leftRevSpeed = CW_MIN_SPEED;
-
 int rightFwdSpeed = CW_MIN_SPEED;
 int rightRevSpeed = CCW_MIN_SPEED;
 
@@ -105,8 +103,6 @@ void updateDriveTrim()
   int knob_value = analogRead( TRIM_KNOB_PIN );
   _wheel_speed_trim = map( knob_value, 0, 1023, -50, 50 );
 }
-
-int _wheel_speed_trim_override = 0;
 
 void setup()
 {
@@ -270,8 +266,8 @@ void motorsForward()
   rightRevSpeed = CCW_MIN_SPEED + 20;
 
   updateDriveTrim();
-  servoSpeedLeft = leftFwdSpeed + _wheel_speed_trim + _wheel_speed_trim_override;
-  servoSpeedRight = rightFwdSpeed + _wheel_speed_trim + _wheel_speed_trim_override;
+  servoSpeedLeft = leftFwdSpeed + _wheel_speed_trim;
+  servoSpeedRight = rightFwdSpeed + _wheel_speed_trim;
 
   motorsSetSpeed();
 }
@@ -302,8 +298,8 @@ void motorsRotateRight()
 
 void loop()
 {
-  uint8_t nextState = state;
-  switch (state)
+  uint8_t nextState = lineFollowingState;
+  switch (lineFollowingState)
   {
   case IDLE_STATE:
     motorsStop();       // Stops both motors
@@ -352,6 +348,6 @@ void loop()
     }
     break;
   }
-  state = nextState;
+  lineFollowingState = nextState;
 }
 
