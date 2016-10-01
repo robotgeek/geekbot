@@ -37,7 +37,7 @@
 #ifdef USE_PID
 #include <PID_v1.h>
 double Setpoint, Input, Output;
-PID turningPID(&Input, &Output, &Setpoint, 0.07, 0.01, 0.01, DIRECT); //first success: 0.07, 0.01, 0.01
+PID turningPID(&Input, &Output, &Setpoint, 0.5, 0.02, 0.02, DIRECT); //last success: 0.5, 0.02, 0.02
 #endif
 
 template< typename T, size_t N > size_t ArraySize (T (&) [N]) { return N; }
@@ -357,12 +357,15 @@ void motorsSetSpeed()
   servoLeft.writeMicroseconds(servoSpeedLeft);
   servoRight.writeMicroseconds(servoSpeedRight);
 }
-void motorsSetForwardSpeed()
+void motorsUpdateForwardSpeed()
 {
   leftFwdSpeed = CCW_MIN_SPEED + 20;
-  leftRevSpeed = CW_MIN_SPEED - 20;
+  //leftRevSpeed = CW_MIN_SPEED - 20;
   rightFwdSpeed = CW_MIN_SPEED - 20;
-  rightRevSpeed = CCW_MIN_SPEED + 20;
+  //rightRevSpeed = CCW_MIN_SPEED + 20;
+  updateDriveTrim();
+  servoSpeedLeft = leftFwdSpeed + _wheel_speed_trim;
+  servoSpeedRight = rightFwdSpeed + _wheel_speed_trim;
 }
 void motorsStop()
 {
@@ -374,17 +377,13 @@ void motorsForward()
 {
   currentSpeed = SPEED_MIN;
   SERVO_TURN_SPEED = SERVO_TURN_SPEED_LOW;
-  motorsSetForwardSpeed();
-
-  updateDriveTrim();
-  servoSpeedLeft = leftFwdSpeed + _wheel_speed_trim;
-  servoSpeedRight = rightFwdSpeed + _wheel_speed_trim;
+  motorsUpdateForwardSpeed();
 
   motorsSetSpeed();
 }
 void motorsTurnLeft()
 {
-  motorsSetForwardSpeed();
+  motorsUpdateForwardSpeed();
 #ifdef USE_PID
   servoSpeedLeft -= Output;
 #else
@@ -394,7 +393,7 @@ void motorsTurnLeft()
 }
 void motorsTurnRight()
 {
-  motorsSetForwardSpeed();
+  motorsUpdateForwardSpeed();
 #ifdef USE_PID
   servoSpeedRight -= Output;
 #else
