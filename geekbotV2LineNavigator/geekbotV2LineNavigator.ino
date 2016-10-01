@@ -32,6 +32,14 @@
  *
  ***********************************************************************************/
 
+#define USE_PID
+
+#ifdef USE_PID
+#include <PID_v1.h>
+double Setpoint, Input, Output;
+PID turningPID(&Input, &Output, &Setpoint, 0.07, 0.01, 0.01, DIRECT); //first success: 0.07, 0.01, 0.01
+#endif
+
 template< typename T, size_t N > size_t ArraySize (T (&) [N]) { return N; }
 
 enum NavCmds
@@ -61,7 +69,7 @@ uint8_t routeGarageKitchen[] = { NAV_LEFT, NAV_UTURN, NAV_STOP  };
 uint8_t routeKitchenLab[] = { NAV_LEFT, NAV_RIGHT, NAV_UTURN, NAV_STOP };
 uint8_t routeKitchenGarage[] = { NAV_RIGHT, NAV_UTURN, NAV_STOP };
 
-uint8_t routeNoRoute[] = { NAV_STOP };
+const uint8_t routeNoRoute[] = { NAV_STOP };
 
 /* You must define a map for each location and it's destinations */
 uint8_t * navigationMap[][3] =
@@ -167,6 +175,13 @@ void updateDriveTrim()
 
 void setup()
 {
+#ifdef USE_PID
+  Input = 0;
+  Setpoint = 0;
+  turningPID.SetMode(AUTOMATIC);
+  turningPID.SetOutputLimits(-SERVO_DRIVE_TURN_SPEED, SERVO_DRIVE_TURN_SPEED);
+#endif
+
   //lcd buttons
   pinMode(LCD_UP_PIN, INPUT_PULLUP);
   pinMode(LCD_DOWN_PIN, INPUT_PULLUP);
@@ -342,7 +357,13 @@ void motorsSetSpeed()
   servoLeft.writeMicroseconds(servoSpeedLeft);
   servoRight.writeMicroseconds(servoSpeedRight);
 }
-
+void motorsSetForwardSpeed()
+{
+  leftFwdSpeed = CCW_MIN_SPEED + 20;
+  leftRevSpeed = CW_MIN_SPEED - 20;
+  rightFwdSpeed = CW_MIN_SPEED - 20;
+  rightRevSpeed = CCW_MIN_SPEED + 20;
+}
 void motorsStop()
 {
   servoSpeedLeft = SERVO_STOP;
@@ -353,10 +374,7 @@ void motorsForward()
 {
   currentSpeed = SPEED_MIN;
   SERVO_TURN_SPEED = SERVO_TURN_SPEED_LOW;
-  leftFwdSpeed = CCW_MIN_SPEED + 20;
-  leftRevSpeed = CW_MIN_SPEED - 20;
-  rightFwdSpeed = CW_MIN_SPEED - 20;
-  rightRevSpeed = CCW_MIN_SPEED + 20;
+  motorsSetForwardSpeed();
 
   updateDriveTrim();
   servoSpeedLeft = leftFwdSpeed + _wheel_speed_trim;
@@ -366,14 +384,23 @@ void motorsForward()
 }
 void motorsTurnLeft()
 {
-  motorsForward();
+  motorsSetForwardSpeed();
+#ifdef USE_PID
+  servoSpeedLeft -= Output;
+#else
   servoSpeedLeft -= SERVO_DRIVE_TURN_SPEED;
+#endif
   motorsSetSpeed();
 }
 void motorsTurnRight()
 {
-  motorsForward();
+  motorsSetForwardSpeed();
+#ifdef USE_PID
+  servoSpeedRight -= Output;
+#else
   servoSpeedRight += SERVO_DRIVE_TURN_SPEED;
+#endif
+
   motorsSetSpeed();
 }
 void motorsRotateLeft()
@@ -390,7 +417,7 @@ void motorsRotateRight()
 }
 
 
-uint8_t lcdCurrentSelection = 0;
+int lcdCurrentSelection = 0;
 
 void lcdSelectLocation()
 {
@@ -481,14 +508,12 @@ void loop()
       {
         SoundPlay(UP);
         if ( --lcdCurrentSelection < 0 ) lcdCurrentSelection = ArraySize( destinationList ) - 1;
-        delay(250); //debounce time
         break;
       }
       if ( digitalRead(LCD_DOWN_PIN) == LOW )
       {
         SoundPlay(DOWN);
         if ( ++lcdCurrentSelection == ArraySize( destinationList ) ) lcdCurrentSelection = 0;
-        delay(250); //debounce time
         break;
       }
       if ( digitalRead(LCD_PLAY_PIN) == LOW )
@@ -497,7 +522,7 @@ void loop()
         {
           SoundPlay(UHOH);
           currentNavigationDestination = lcdCurrentSelection;
-          delay(250); //debounce time
+
           /*
           Serial.print( "Current Destination: " );
           Serial.print( currentNavigationDestination );
@@ -506,9 +531,9 @@ void loop()
           */
 
           lcd.clear();
-          lcd.print( "Hold on to your butt" );
+          lcd.print( "Traveling from:" );
           lcd.setCursor(0, 1); lcd.print( destinationList[currentNavigationLocation] );
-          lcd.setCursor(0, 2); lcd.print( "to" );
+          lcd.setCursor(0, 2); lcd.print( "to:" );
           lcd.setCursor(0, 3); lcd.print( destinationList[currentNavigationDestination] );
           delay(1000);
           break;
@@ -536,6 +561,10 @@ void loop()
   case READ_LINE:
     if( mySensorBar.getDensity() < 7 )
     {
+#ifdef USE_PID
+      Input = mySensorBar.getPosition();
+      turningPID.Compute();
+#endif
       nextState = GO_FORWARD;
       if( mySensorBar.getPosition() < -50 )
       {
