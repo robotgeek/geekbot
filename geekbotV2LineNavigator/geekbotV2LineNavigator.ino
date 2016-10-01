@@ -61,17 +61,17 @@ uint8_t routeGarageKitchen[] = { NAV_LEFT, NAV_UTURN, NAV_STOP  };
 uint8_t routeKitchenLab[] = { NAV_LEFT, NAV_RIGHT, NAV_UTURN, NAV_STOP };
 uint8_t routeKitchenGarage[] = { NAV_RIGHT, NAV_UTURN, NAV_STOP };
 
+uint8_t routeNoRoute[] = { NAV_STOP };
+
 /* You must define a map for each location and it's destinations */
 uint8_t * navigationMap[][3] =
 {
   //Location: Robot Lab. Routes in same order as destinationList
-  {0, routeLabGarage, routeLabKitchen}, //First entry is 0 because there is no route from Robot Lab to Robot Lab
-
+  {routeNoRoute, routeLabGarage, routeLabKitchen},
   //Location: Garage. Routes in same order as destinationList
-  {routeGarageLab, 0, routeGarageKitchen}, //Second entry is 0 because there is no route from Garage to Garage
-
+  {routeGarageLab, routeNoRoute, routeGarageKitchen},
   //Location: Kitchen. Routes in same order as destinationList
-  {routeKitchenLab, routeKitchenGarage, 0 }  //Third entry is 0 because there is no route from Kitchen to Kitchen
+  {routeKitchenLab, routeKitchenGarage, routeNoRoute }
 };
 
 int currentNavigationLocation = -1; //Below 0 is unknown, otherwise will be index of destinationList[]
@@ -306,8 +306,8 @@ void intersectionDetected()
   motorsStop();
   uint8_t * testIntersectionValue = navigationMap[ currentNavigationLocation ][ currentNavigationDestination ];
   uint8_t currentIntersectionCommand = testIntersectionValue[ ++currentNavigationIntersection ];
-  Serial.print( "Intersection command: " );
-  Serial.println( currentIntersectionCommand );
+  //Serial.print( "Intersection command: " );
+  //Serial.println( currentIntersectionCommand );
   switch( currentIntersectionCommand )
   {
   case NAV_FWD:
@@ -456,10 +456,12 @@ void loop()
       {
         SoundPlay(UHOH);
         currentNavigationLocation = lcdCurrentSelection;
+        /*
         Serial.print( "Current Location: " );
         Serial.print( currentNavigationLocation );
         Serial.print( ": " );
         Serial.println( destinationList[currentNavigationLocation] );
+        */
         delay(250); //debounce time
         break;
       }
@@ -491,22 +493,30 @@ void loop()
       }
       if ( digitalRead(LCD_PLAY_PIN) == LOW )
       {
-        SoundPlay(UHOH);
-        currentNavigationDestination = lcdCurrentSelection;
-        delay(250); //debounce time
+        if ( lcdCurrentSelection != currentNavigationLocation )
+        {
+          SoundPlay(UHOH);
+          currentNavigationDestination = lcdCurrentSelection;
+          delay(250); //debounce time
+          /*
+          Serial.print( "Current Destination: " );
+          Serial.print( currentNavigationDestination );
+          Serial.print( ": " );
+          Serial.println( destinationList[currentNavigationDestination] );
+          */
 
-        Serial.print( "Current Destination: " );
-        Serial.print( currentNavigationDestination );
-        Serial.print( ": " );
-        Serial.println( destinationList[currentNavigationDestination] );
-
-        lcd.clear();
-        lcd.print( "Hold on to your butt" );
-        lcd.setCursor(0, 1); lcd.print( destinationList[currentNavigationLocation] );
-        lcd.setCursor(0, 2); lcd.print( "to" );
-        lcd.setCursor(0, 3); lcd.print( destinationList[currentNavigationDestination] );
-        delay(1000);
-        break;
+          lcd.clear();
+          lcd.print( "Hold on to your butt" );
+          lcd.setCursor(0, 1); lcd.print( destinationList[currentNavigationLocation] );
+          lcd.setCursor(0, 2); lcd.print( "to" );
+          lcd.setCursor(0, 3); lcd.print( destinationList[currentNavigationDestination] );
+          delay(1000);
+          break;
+        }
+        else
+        {
+          SoundPlay(OHH);
+        }
       }
     }
     return;
