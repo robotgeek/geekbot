@@ -32,6 +32,7 @@
  *
  ***********************************************************************************/
 
+#define AUTO_RETURN_HOME
 #define USE_PID
 
 #ifdef USE_PID
@@ -56,31 +57,46 @@ String destinationList[] =
 {
   "Robot Lab",
   "Garage",
-  "Kitchen"
+  "Kitchen",
+  "Dogs Bed"
 };
 
 /* You must define a route from each destination to another */
 uint8_t routeLabGarage[] = {  NAV_LEFT, NAV_FWD, NAV_UTURN, NAV_STOP  };
-uint8_t routeLabKitchen[] = {  NAV_LEFT, NAV_RIGHT, NAV_UTURN, NAV_STOP  };
+uint8_t routeLabKitchen[] = {  NAV_LEFT, NAV_RIGHT, NAV_FWD, NAV_UTURN, NAV_STOP  };
+uint8_t routeLabDogs[] = {  NAV_LEFT, NAV_RIGHT, NAV_LEFT, NAV_UTURN, NAV_STOP  };
 
 uint8_t routeGarageLab[] = { NAV_FWD, NAV_RIGHT, NAV_UTURN, NAV_STOP };
-uint8_t routeGarageKitchen[] = { NAV_LEFT, NAV_UTURN, NAV_STOP  };
+uint8_t routeGarageKitchen[] = { NAV_LEFT, NAV_FWD, NAV_UTURN, NAV_STOP  };
+uint8_t routeGarageDogs[] = { NAV_LEFT, NAV_LEFT, NAV_UTURN, NAV_STOP  };
 
-uint8_t routeKitchenLab[] = { NAV_LEFT, NAV_RIGHT, NAV_UTURN, NAV_STOP };
-uint8_t routeKitchenGarage[] = { NAV_RIGHT, NAV_UTURN, NAV_STOP };
+uint8_t routeKitchenLab[] = { NAV_FWD, NAV_LEFT, NAV_RIGHT, NAV_UTURN, NAV_STOP };
+uint8_t routeKitchenGarage[] = { NAV_FWD, NAV_RIGHT, NAV_UTURN, NAV_STOP };
+uint8_t routeKitchenDogs[] = { NAV_RIGHT, NAV_UTURN, NAV_STOP };
+
+uint8_t routeDogsLab[] = { NAV_RIGHT, NAV_LEFT, NAV_RIGHT, NAV_UTURN, NAV_STOP };
+uint8_t routeDogsGarage[] = { NAV_RIGHT, NAV_RIGHT, NAV_UTURN, NAV_STOP };
+uint8_t routeDogsKitchen[] = { NAV_LEFT, NAV_UTURN, NAV_STOP };
 
 const uint8_t routeNoRoute[] = { NAV_STOP };
 
 /* You must define a map for each location and it's destinations */
-uint8_t * navigationMap[][3] =
+uint8_t * navigationMap[][4] =
 {
   //Location: Robot Lab. Routes in same order as destinationList
-  {routeNoRoute, routeLabGarage, routeLabKitchen},
-  //Location: Garage. Routes in same order as destinationList
-  {routeGarageLab, routeNoRoute, routeGarageKitchen},
-  //Location: Kitchen. Routes in same order as destinationList
-  {routeKitchenLab, routeKitchenGarage, routeNoRoute }
+  {routeNoRoute, routeLabGarage, routeLabKitchen, routeLabDogs},
+  //Location: Garage.
+  {routeGarageLab, routeNoRoute, routeGarageKitchen, routeGarageDogs},
+  //Location: Kitchen.
+  {routeKitchenLab, routeKitchenGarage, routeNoRoute, routeKitchenDogs},
+  //Location: Dogs Bed.
+  {routeDogsLab, routeDogsGarage, routeDogsKitchen, routeNoRoute}
 };
+
+#ifdef AUTO_RETURN_HOME
+int navigationReturnHomeTimeout = 60; //seconds until timeout so robot will return to home location
+int currentNavigationHome = -1;
+#endif
 
 int currentNavigationLocation = -1; //Below 0 is unknown, otherwise will be index of destinationList[]
 int currentNavigationDestination = -1; //Below 0 is unknown, otherwise will be index of destinationList[]
@@ -459,7 +475,7 @@ void loop()
   if ( currentNavigationLocation < 0 )
   {
     lcd.clear();
-    lcd.print( "Select Location:" );
+    lcd.print( "Where am I starting?" );
     lcdSelectLocation();
 
     while ( digitalRead(LCD_UP_PIN) == HIGH || digitalRead(LCD_DOWN_PIN) == HIGH || digitalRead(LCD_PLAY_PIN) == HIGH )
@@ -482,6 +498,7 @@ void loop()
       {
         SoundPlay(UHOH);
         currentNavigationLocation = lcdCurrentSelection;
+        currentNavigationHome = lcdCurrentSelection;
         /*
         Serial.print( "Current Location: " );
         Serial.print( currentNavigationLocation );
@@ -501,8 +518,27 @@ void loop()
     lcd.print( "Select Destination:" );
     lcdSelectDestination();
 
+#ifdef AUTO_RETURN_HOME
+    unsigned long navigationDestinationPromptTime = millis();
+#endif
     while ( digitalRead(LCD_UP_PIN) == HIGH || digitalRead(LCD_DOWN_PIN) == HIGH || digitalRead(LCD_PLAY_PIN) == HIGH )
     {
+#ifdef AUTO_RETURN_HOME
+      if ( currentNavigationLocation != currentNavigationHome && navigationDestinationPromptTime + navigationReturnHomeTimeout * 1000 < millis() )
+      {
+        //Timeout has occured.. we are going to return home
+        SoundPlay(UHOH);
+        currentNavigationDestination = currentNavigationHome;
+        lcd.clear();
+        lcd.print( "Returning home!" );
+        lcd.setCursor(0, 1);
+        lcd.print( navigationReturnHomeTimeout );
+        lcd.print( " second timeout." );
+        lcd.setCursor(0, 2); lcd.print( "Next stop:" );
+        lcd.setCursor(0, 3); lcd.print( destinationList[currentNavigationHome] );
+        break;
+      }
+#endif
       if ( digitalRead(LCD_UP_PIN) == LOW )
       {
         SoundPlay(UP);
@@ -602,4 +638,3 @@ void loop()
   }
   lineFollowingState = nextState;
 }
-
