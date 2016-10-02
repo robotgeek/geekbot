@@ -94,7 +94,7 @@ uint8_t * navigationMap[][4] =
 };
 
 #ifdef AUTO_RETURN_HOME
-int navigationReturnHomeTimeout = 60; //seconds until timeout so robot will return to home location
+unsigned long navigationReturnHomeTimeout = 60; //seconds until timeout so robot will return to home location
 int currentNavigationHome = -1;
 #endif
 
@@ -524,7 +524,7 @@ void loop()
     while ( digitalRead(LCD_UP_PIN) == HIGH || digitalRead(LCD_DOWN_PIN) == HIGH || digitalRead(LCD_PLAY_PIN) == HIGH )
     {
 #ifdef AUTO_RETURN_HOME
-      if ( currentNavigationLocation != currentNavigationHome && navigationDestinationPromptTime + navigationReturnHomeTimeout * 1000 < millis() )
+      if ( currentNavigationLocation != currentNavigationHome && navigationDestinationPromptTime + navigationReturnHomeTimeout * 1000ul < millis() )
       {
         //Timeout has occured.. we are going to return home
         SoundPlay(UHOH);
