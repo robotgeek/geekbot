@@ -15,6 +15,7 @@
  *    IR Receiver - Digital Pin 2
  *    Right LED - Digital Pin 4
  *    Left LED - Digital Pin 7
+ *    IR Sensor Array - I2C
  *
  *    Jumper for pins 9/10/11 should be set to 'VIN'
  *    Jumper for pins 3/5/6 should be set to '5V'
@@ -27,7 +28,12 @@
  *
  ***********************************************************************************/
 
+//Includes
+#include <Servo.h>     //include servo library to control continous turn servos
+#include "Sounds.h"
+
 #include <sensorbar.h>
+
 // Uncomment one of the four lines to match your SX1509's address
 //  pin selects. SX1509 breakout defaults to [0:0] (0x3E).
 const uint8_t SX1509_ADDRESS = 0x3E;  // SX1509 I2C address (00)
@@ -35,22 +41,14 @@ const uint8_t SX1509_ADDRESS = 0x3E;  // SX1509 I2C address (00)
 //const byte SX1509_ADDRESS = 0x70;  // SX1509 I2C address (10)
 //const byte SX1509_ADDRESS = 0x71;  // SX1509 I2C address (11)
 SensorBar mySensorBar(SX1509_ADDRESS);
+
 #define IDLE_STATE 0
 #define READ_LINE 1
 #define GO_FORWARD 2
 #define GO_LEFT 3
 #define GO_RIGHT 4
-#define GO_INTERSECTION 5
 
 uint8_t lineFollowingState; //State of line following
-
-//Intersection constants
-const int BLIND_DRIVE_TIME = 700; //milliseconds to drive forward at intersection
-const int BLIND_TURN_TIME = 250; //milliseconds to turn without checking sensor (time to move off line)
-
-//Includes
-#include <Servo.h>     //include servo library to control continous turn servos
-#include "Sounds.h"
 
 //pin constants
 const int TRIM_KNOB_PIN = 0;
@@ -61,42 +59,22 @@ const int LEFT_SERVO_PIN = 10;
 const int RIGHT_SERVO_PIN = 11;
 
 //Servo control
+Servo servoLeft, servoRight; //wheel servo objects
 const int SERVO_STOP = 1500; //servo pulse in microseconds for stopped servo
-
-//Speed constants from RGS-4C No Load Test Data
-const int CCW_MIN_SPEED = 1580;
+const int CCW_MIN_SPEED = 1580; //Speed constants from RGS-4C No Load Test Data
 const int CW_MIN_SPEED = 1400;
-const int CCW_MAX_SPEED = 1750;
-const int CW_MAX_SPEED = 1250;
-//Experimental speed constant
-const int CCW_MED_SPEED = 1660;
-const int CW_MED_SPEED = 1300;
+
 //Turning speed constants
-const int SERVO_TURN_SPEED_HIGH = 50;
-const int SERVO_TURN_SPEED_LOW = 25;
-int SERVO_DRIVE_TURN_SPEED = 70; //For turning while driving
-int SERVO_TURN_SPEED = SERVO_TURN_SPEED_LOW; //For in place turning. Applied to CW and CCW_MIN_SPEEDs
+const int SERVO_DRIVE_TURN_SPEED = 70; //For turning while driving
+const int SERVO_TURN_SPEED = 25; //For in place turning. Applied to left and rightFwdSpeed
 
-Servo servoLeft, servoRight;      //wheel servo objects
-
+//Servo speeds
+const int leftFwdSpeed = CCW_MIN_SPEED + 20;
+const int rightFwdSpeed = CW_MIN_SPEED - 20;
 int servoSpeedLeft = SERVO_STOP;   //left servo speed.
 int servoSpeedRight = SERVO_STOP;  //right servo speed.
 
-//Wheel speeds from "gear" selection
-int leftFwdSpeed = CCW_MIN_SPEED;
-int leftRevSpeed = CW_MIN_SPEED;
-int rightFwdSpeed = CW_MIN_SPEED;
-int rightRevSpeed = CCW_MIN_SPEED;
-
-enum SpeedSelections
-{
-  SPEED_MIN,
-  SPEED_MED,
-  SPEED_MAX
-};
-int currentSpeed = SPEED_MIN;
-
-//Trim testing
+//Servo speed trim
 int _wheel_speed_trim = 0;
 void updateDriveTrim()
 {
@@ -104,152 +82,12 @@ void updateDriveTrim()
   _wheel_speed_trim = map( knob_value, 0, 1023, -50, 50 );
 }
 
-void setup()
-{
-  //Default: the IR will only be turned on during reads.
-  mySensorBar.setBarStrobe();
-  //Other option: Command to run all the time
-  //mySensorBar.clearBarStrobe();
-
-  //Default: dark on light
-  mySensorBar.clearInvertBits();
-  //Other option: light line on dark
-  //mySensorBar.setInvertBits();
-
-  //Don't forget to call .begin() to get the bar ready.  This configures HW.
-  uint8_t returnStatus = mySensorBar.begin();
-  if(returnStatus)
-  {
-    Serial.println("sx1509 IC communication OK");
-  }
-  else
-  {
-    Serial.println("sx1509 IC communication FAILED!");
-  }
-
-  // put your setup code here, to run once:
-  pinMode(LED_LEFT_PIN, OUTPUT);
-  pinMode(BUZZER_PIN, OUTPUT);
-  digitalWrite(LED_LEFT_PIN, HIGH);
-  digitalWrite(LED_RIGHT_PIN, HIGH);
-
-  Serial.begin(38400);
-
-  servoLeft.attach(LEFT_SERVO_PIN);
-  servoRight.attach(RIGHT_SERVO_PIN);
-  servoLeft.writeMicroseconds(servoSpeedLeft);
-  servoRight.writeMicroseconds(servoSpeedRight);
-
-  SoundEnable();
-
-  Serial.println("Geekbot V2 Start");
-}
-
-void intersectionForward()
-{
-  motorsForward();
-  while ( mySensorBar.getDensity() > 5 )
-  {
-    delay(100);
-  }
-}
-void intersectionRight()
-{
-  motorsForward();
-  delay(BLIND_DRIVE_TIME); //time to move forward onto intersection
-  motorsRotateRight();
-  delay(BLIND_TURN_TIME); //time to get off the line
-  while( true )
-  {
-    if( mySensorBar.getDensity() < 3 )
-    {
-      uint8_t lastBarRawValue = mySensorBar.getRaw();
-
-      if ( lastBarRawValue == 0x08 || lastBarRawValue == 0x18 || lastBarRawValue == 0x10 )
-      {
-        break; //Stop rotating when line is detected in middle.
-      }
-
-      //Detecting wide tape
-      if ( lastBarRawValue == 0x1C || lastBarRawValue == 0x38 )
-      {
-        break; //Stop rotating when line is detected in middle.
-      }
-    }
-  }
-}
-void intersectionLeft()
-{
-  motorsForward();
-  delay(BLIND_DRIVE_TIME); //time to move forward onto intersection
-  motorsRotateLeft();
-  delay(BLIND_TURN_TIME); //time to get off the line
-  while( true )
-  {
-    if( mySensorBar.getDensity() < 3 )
-    {
-      uint8_t lastBarRawValue = mySensorBar.getRaw();
-
-      if ( lastBarRawValue == 0x08 || lastBarRawValue == 0x18 || lastBarRawValue == 0x10 )
-      {
-        break; //Stop rotating when line is detected in middle.
-      }
-
-      //Detecting wide tape
-      if ( lastBarRawValue == 0x1C || lastBarRawValue == 0x38 )
-      {
-        break; //Stop rotating when line is detected in middle.
-      }
-    }
-  }
-}
-
-int currentIntersection = 0;
-void intersectionDetected()
-{
-  motorsStop();
-  switch( ++currentIntersection )
-  {
-  case 1:
-    SoundPlay(UP);
-    intersectionLeft();
-    break;
-  case 2:
-    SoundPlay(DOWN);
-    intersectionRight();
-    break;
-  case 3:
-    SoundPlay(DOWN);
-    intersectionRight();
-    break;
-  case 4:
-    SoundPlay(UP);
-    intersectionLeft();
-    break;
-  case 5:
-    SoundPlay(LAUGH);
-    intersectionForward();
-    break;
-  case 6:
-    SoundPlay(UP);
-    intersectionLeft();
-    break;
-  case 7:
-    SoundPlay(DOWN);
-    intersectionRight();
-    break;
-  default:
-    motorsStop();
-    SoundPlay(WHISTLE);
-    while (1);
-  }
-}
+//Motor Speed Control
 void motorsSetSpeed()
 {
   servoLeft.writeMicroseconds(servoSpeedLeft);
   servoRight.writeMicroseconds(servoSpeedRight);
 }
-
 void motorsStop()
 {
   servoSpeedLeft = SERVO_STOP;
@@ -258,17 +96,9 @@ void motorsStop()
 }
 void motorsForward()
 {
-  currentSpeed = SPEED_MIN;
-  SERVO_TURN_SPEED = SERVO_TURN_SPEED_LOW;
-  leftFwdSpeed = CCW_MIN_SPEED + 20;
-  leftRevSpeed = CW_MIN_SPEED - 20;
-  rightFwdSpeed = CW_MIN_SPEED - 20;
-  rightRevSpeed = CCW_MIN_SPEED + 20;
-
   updateDriveTrim();
   servoSpeedLeft = leftFwdSpeed + _wheel_speed_trim;
   servoSpeedRight = rightFwdSpeed + _wheel_speed_trim;
-
   motorsSetSpeed();
 }
 void motorsTurnLeft()
@@ -296,18 +126,54 @@ void motorsRotateRight()
   motorsSetSpeed();
 }
 
+void setup()
+{
+  //Default: the IR will only be turned on during reads.
+  mySensorBar.setBarStrobe();
+  //Other option: Command to run all the time
+  //mySensorBar.clearBarStrobe();
+
+  //Default: dark on light
+  mySensorBar.clearInvertBits();
+  //Other option: light line on dark
+  //mySensorBar.setInvertBits();
+
+  //Don't forget to call .begin() to get the bar ready.  This configures HW.
+  uint8_t returnStatus = mySensorBar.begin();
+  if(returnStatus)
+  {
+    Serial.println("sx1509 IC communication OK");
+  }
+  else
+  {
+    Serial.println("sx1509 IC communication FAILED!");
+  }
+
+  pinMode(LED_LEFT_PIN, OUTPUT);
+  pinMode(BUZZER_PIN, OUTPUT);
+  digitalWrite(LED_LEFT_PIN, HIGH);
+  digitalWrite(LED_RIGHT_PIN, HIGH);
+
+  Serial.begin(38400);
+
+  servoLeft.attach(LEFT_SERVO_PIN);
+  servoRight.attach(RIGHT_SERVO_PIN);
+  servoLeft.writeMicroseconds(servoSpeedLeft);
+  servoRight.writeMicroseconds(servoSpeedRight);
+
+  SoundEnable();
+
+  Serial.println("Geekbot V2 Line Follower Starting");
+}
+
 void loop()
 {
   uint8_t nextState = lineFollowingState;
   switch (lineFollowingState)
   {
   case IDLE_STATE:
-    motorsStop();       // Stops both motors
+    motorsStop(); //Stops both motors
     nextState = READ_LINE;
-    break;
-  case GO_INTERSECTION:
-    intersectionDetected(); //This function will handle all drive and sensor commands until intersection is complete
-    nextState = IDLE_STATE;
     break;
   case READ_LINE:
     if( mySensorBar.getDensity() < 7 )
@@ -321,10 +187,6 @@ void loop()
       {
         nextState = GO_RIGHT;
       }
-    }
-    else //all 8 on means we found an intersection
-    {
-      nextState = GO_INTERSECTION;
     }
     break;
   case GO_FORWARD:
@@ -340,7 +202,7 @@ void loop()
     nextState = READ_LINE;
     break;
   default:
-    motorsStop();       // Stops both motors
+    motorsStop(); //Stops both motors
     while(1)
     {
       SoundPlay(WHISTLE);
@@ -350,4 +212,3 @@ void loop()
   }
   lineFollowingState = nextState;
 }
-
