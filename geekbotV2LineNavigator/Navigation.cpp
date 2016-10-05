@@ -235,6 +235,11 @@ void intersectionForward()
   motorsForward();
   while ( mySensorBar.getDensity() > 5 )
   {
+    if ( navigationCheckEStop() )
+    {
+      navigationCancel();
+      return;
+    }
     delay(100);
   }
 }
