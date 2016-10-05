@@ -1,6 +1,7 @@
 #include "LineFollower.h"
 #include "Motors.h"
-#include "Navigation.h" //For calling intersectionDetected()
+#include "Navigation.h"
+#include "LineSensorArray.h"
 
 /* Line Following States */
 #define IDLE_STATE 0
@@ -20,22 +21,38 @@ void lineFollowerInit( PiezoEffects * mySounds )
 	lineFollowerSounds = mySounds;
 }
 
+bool checkEStop()
+{
+	if ( digitalRead(LCD_STOP_PIN) == LOW )
+	{
+		motorsStop(); //Stops both motors
+		navigationCancel();
+		return true;
+	}
+	return false;
+}
+
 void recoverLineRight()
 {
 	motorsRotateRight();
 	while( true )
 	{
+		if ( checkEStop() ) return; //Abort when requested
+
 		if( mySensorBar.getDensity() > 0  )
 		{
 			break; //Stop rotating when line is detected.
 		}
 	}
 }
+
 void recoverLineLeft()
 {
 	motorsRotateLeft();
 	while( true )
 	{
+		if ( checkEStop() ) return; //Abort when requested
+
 		if( mySensorBar.getDensity() > 0 )
 		{
 			break; //Stop rotating when line is detected.
@@ -45,11 +62,13 @@ void recoverLineLeft()
 
 void lineFollowerUpdate()
 {
+	if ( checkEStop() ) return; //Abort when requested
+
 	uint8_t nextState = lineFollowingState;
 	switch (lineFollowingState)
 	{
 	case IDLE_STATE:
-		motorsStop();       // Stops both motors
+		motorsStop(); //Stops both motors
 		nextState = READ_LINE;
 		lastTurnDirection = IDLE_STATE;
 		break;
@@ -72,7 +91,8 @@ void lineFollowerUpdate()
 				break;
 			default:
 				motorsStop();
-				lineFollowerSounds->play( soundSad );
+				lineFollowerSounds->play( soundDisconnection );
+				delay(1000); //Wait a second to prevent the sound from looping on itself
 				nextState = IDLE_STATE;
 			}
 		}
@@ -113,13 +133,13 @@ void lineFollowerUpdate()
 		nextState = READ_LINE;
 		break;
 	default:
-		motorsStop();       // Stops both motors
+		//Somehow something went wrong. This should never be experienced.
+		motorsStop(); //Stops both motors
 		while(1)
 		{
 			lineFollowerSounds->play( soundWhistle );
 			delay(1000);
 		}
-		break;
 	}
 	lineFollowingState = nextState;
 }

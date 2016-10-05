@@ -8,6 +8,7 @@ LiquidCrystal_I2C lcd(0x3F, 20, 4);
 const uint8_t LCD_UP_PIN = 3;
 const uint8_t LCD_DOWN_PIN = 9;
 const uint8_t LCD_PLAY_PIN = 1;
+const uint8_t LCD_STOP_PIN = 8;
 
 #ifdef AUTO_RETURN_HOME
 unsigned long navigationReturnHomeTimeout = 60; //seconds until timeout so robot will return to home location
@@ -71,11 +72,22 @@ void navigationInit(PiezoEffects * mySounds)
   pinMode(LCD_UP_PIN, INPUT_PULLUP);
   pinMode(LCD_DOWN_PIN, INPUT_PULLUP);
   pinMode(LCD_PLAY_PIN, INPUT_PULLUP);
+  pinMode(LCD_STOP_PIN, INPUT_PULLUP);
 
   // initialize the LCD
   lcd.begin();
   lcd.backlight();
   lcd.print("Geekbot Navigator");
+}
+
+/* Check for stop button. Returns true if pressed */
+bool navigationCheckEStop()
+{
+  if ( digitalRead(LCD_STOP_PIN) == LOW )
+  {
+    return true;
+  }
+  return false;
 }
 
 bool navigationCheckLocation()
@@ -130,13 +142,17 @@ bool navigationCheckDestination()
   if ( currentNavigationDestination < 0 )
   {
     lcd.clear();
-    lcd.print( "Select Destination:" );
+    lcd.print( "Where am I going?" );
     lcdSelectDestination();
 
 #ifdef AUTO_RETURN_HOME
     unsigned long navigationDestinationPromptTime = millis();
 #endif
-    while ( digitalRead(LCD_UP_PIN) == HIGH || digitalRead(LCD_DOWN_PIN) == HIGH || digitalRead(LCD_PLAY_PIN) == HIGH )
+    while ( digitalRead(LCD_UP_PIN) == HIGH ||
+            digitalRead(LCD_DOWN_PIN) == HIGH ||
+            digitalRead(LCD_PLAY_PIN) == HIGH ||
+            digitalRead(LCD_STOP_PIN) == HIGH
+          )
     {
 #ifdef AUTO_RETURN_HOME
       if ( currentNavigationLocation != currentNavigationHome && navigationDestinationPromptTime + navigationReturnHomeTimeout * 1000ul < millis() )
@@ -193,11 +209,27 @@ bool navigationCheckDestination()
           navigationSounds->play( soundOhh );
         }
       }
+      if ( navigationCheckEStop() )
+      {
+        navigationSounds->play( soundButtonPushed );
+        currentNavigationLocation = -1; //Returning to previous question
+        return false;
+      }
     }
     return false;
   }
   return true;
 }
+
+void navigationCancel()
+{
+  motorsStop(); //Make sure motors are stopped
+  currentNavigationLocation = -1; //Reset starting location
+  currentNavigationDestination = -1; //Reset travel destination
+  currentNavigationIntersection = 0; //Reset navigation intersection counter
+  navigationSounds->play( soundSad );
+}
+
 void intersectionForward()
 {
   motorsForward();
@@ -214,6 +246,11 @@ void intersectionRight()
   delay(BLIND_TURN_TIME); //time to get off the line
   while( true )
   {
+    if ( navigationCheckEStop() )
+    {
+      navigationCancel();
+      return;
+    }
     if( mySensorBar.getDensity() < 3 )
     {
       uint8_t lastBarRawValue = mySensorBar.getRaw();
@@ -239,6 +276,11 @@ void intersectionLeft()
   delay(BLIND_TURN_TIME); //time to get off the line
   while( true )
   {
+    if ( navigationCheckEStop() )
+    {
+      navigationCancel();
+      return;
+    }
     if( mySensorBar.getDensity() < 3 )
     {
       uint8_t lastBarRawValue = mySensorBar.getRaw();
@@ -262,6 +304,11 @@ void intersectionUTurn()
   delay(BLIND_TURN_TIME); //time to get off the line
   while( true )
   {
+    if ( navigationCheckEStop() )
+    {
+      navigationCancel();
+      return;
+    }
     if( mySensorBar.getDensity() < 3 )
     {
       uint8_t lastBarRawValue = mySensorBar.getRaw();

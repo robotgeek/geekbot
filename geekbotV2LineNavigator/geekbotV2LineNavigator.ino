@@ -20,6 +20,7 @@
  *    LCD Up Button - Digital Pin 3
  *    LCD Down Button - Digital Pin 9
  *    LCD Play Button - Digital Pin 1
+ *    LCD Stop Button - Digital Pin 8
  *
  *    Jumper for pins 9/10/11 should be set to 'VIN'
  *    Jumper for pins 3/5/6 should be set to '5V'

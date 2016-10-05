@@ -9,6 +9,7 @@
 /* Comment this define if you would like to disable the return home feature */
 #define AUTO_RETURN_HOME
 
+extern const uint8_t LCD_STOP_PIN;
 enum NavCmds
 {
 	NAV_FWD = 1,
@@ -21,6 +22,7 @@ enum NavCmds
 void navigationInit(PiezoEffects * mySounds);
 bool navigationCheckLocation();
 bool navigationCheckDestination();
+void navigationCancel();
 void intersectionForward();
 void intersectionRight();
 void intersectionLeft();
