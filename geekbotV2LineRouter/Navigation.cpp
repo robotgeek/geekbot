@@ -11,7 +11,7 @@ const uint8_t LCD_PLAY_PIN = 1;
 const uint8_t LCD_STOP_PIN = 8;
 
 #ifdef AUTO_RETURN_HOME
-unsigned long navigationReturnHomeTimeout = 6; //seconds until timeout so robot will return to home location
+unsigned long navigationReturnHomeTimeout = 60; //seconds until timeout so robot will return to home location
 int currentNavigationHome = -1;
 #endif
 
