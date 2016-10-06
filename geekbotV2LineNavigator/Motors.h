@@ -9,7 +9,7 @@
 
 extern const int SERVO_DRIVE_TURN_SPEED;
 extern PID turningPID;
-extern double Setpoint, Input, Output;
+extern double Input, Output;
 
 void updateDriveTrim();
 

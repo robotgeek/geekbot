@@ -226,7 +226,7 @@ void navigationCancel()
   motorsStop(); //Make sure motors are stopped
   currentNavigationLocation = -1; //Reset starting location
   currentNavigationDestination = -1; //Reset travel destination
-  currentNavigationIntersection = 0; //Reset navigation intersection counter
+  currentNavigationIntersection = -1; //Reset navigation intersection counter
   navigationSounds->play( soundSad );
 }
 
