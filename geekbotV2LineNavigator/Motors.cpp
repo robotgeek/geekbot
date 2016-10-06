@@ -7,16 +7,19 @@ double Setpoint, Input, Output;
 PID turningPID(&Input, &Output, &Setpoint, 0.5, 0.02, 0.02, DIRECT); //last success: 0.5, 0.02, 0.02
 
 //Servo control
-Servo servoLeft, servoRight;      //wheel servo objects
+Servo servoLeft, servoRight; //wheel servo objects
 const int SERVO_STOP = 1500; //servo pulse in microseconds for stopped servo
 const int CCW_MIN_SPEED = 1580; //Speed constants from RGS-4C No Load Test Data
 const int CW_MIN_SPEED = 1400;
 
 //Turning and forward speed constants
-const int SERVO_DRIVE_TURN_SPEED = 70; //For turning while driving
-const int SERVO_TURN_SPEED = 25; //For in place turning. Applied to right and leftFwdSpeed
-const int leftFwdSpeed = CCW_MIN_SPEED + 20;
-const int rightFwdSpeed = CW_MIN_SPEED - 20;
+//NOTE: Maximum speed with RGS-4C servo is approximately 200 ( microseconds )
+const int TRAVEL_SPEED = 20; //Default: 20. Experiment with higher values to move faster.
+const int SERVO_DRIVE_TURN_SPEED = 70; //Default: 70. For turning while driving. Higher values will turn faster.
+const int SERVO_TURN_SPEED = 25; //Default: 25. For in place turning. Applied to rightFwdSpeed and leftFwdSpeed
+
+const int leftFwdSpeed = CCW_MIN_SPEED + TRAVEL_SPEED;
+const int rightFwdSpeed = CW_MIN_SPEED - TRAVEL_SPEED;
 
 int servoSpeedLeft = SERVO_STOP;   //left servo speed.
 int servoSpeedRight = SERVO_STOP;  //right servo speed.
