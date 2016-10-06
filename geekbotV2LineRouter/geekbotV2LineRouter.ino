@@ -1,5 +1,5 @@
 /***********************************************************************************
- *                         RobotGeek Geekbot V2 Line Navigator
+ *                         RobotGeek Geekbot V2 Line Router
  *  __________________
  *   |              |
  *   |     ___      |
@@ -27,9 +27,9 @@
  *
  *  Control Behavior:
  *
- *    Put it on a line and use the LCD panel to navigate between destinations.
+ *    Use the LCD panel to build a custom route.
  *    Use the Rotation Knob to adjust forward driving trim.
- *    Customize your nagivation routes in myMap.cpp
+ *    Put it on a line.
  *
  *  External Resources
  *
