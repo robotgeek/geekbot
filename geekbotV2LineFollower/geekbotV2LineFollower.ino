@@ -12,7 +12,6 @@
  *    Left Servo - Digital Pin 10
  *    Right Servo - Digital Pin 11
  *    Buzzer - Digital Pin 12
- *    IR Receiver - Digital Pin 2
  *    Right LED - Digital Pin 4
  *    Left LED - Digital Pin 7
  *    IR Sensor Array - I2C
@@ -29,8 +28,11 @@
  ***********************************************************************************/
 
 //Includes
-#include <Servo.h>     //include servo library to control continous turn servos
-#include "Sounds.h"
+#include <Servo.h> //include servo library to control continous turn servos
+#include <PiezoEffects.h>
+
+//Piezo buzzer on Digital Pin 12
+PiezoEffects mySounds( 12 );
 
 #include <sensorbar.h>
 
@@ -48,7 +50,8 @@ SensorBar mySensorBar(SX1509_ADDRESS);
 #define GO_LEFT 3
 #define GO_RIGHT 4
 
-uint8_t lineFollowingState; //State of line following
+uint8_t lineFollowingState = IDLE_STATE; //State of line following
+uint8_t lastTurnDirection = IDLE_STATE;
 
 //pin constants
 const int TRIM_KNOB_PIN = 0;
@@ -125,6 +128,28 @@ void motorsRotateRight()
   servoSpeedRight = CCW_MIN_SPEED + SERVO_TURN_SPEED;
   motorsSetSpeed();
 }
+void recoverLineRight()
+{
+  motorsRotateRight();
+  while( true )
+  {
+    if( mySensorBar.getDensity() > 0  )
+    {
+      break; //Stop rotating when line is detected.
+    }
+  }
+}
+void recoverLineLeft()
+{
+  motorsRotateLeft();
+  while( true )
+  {
+    if( mySensorBar.getDensity() > 0 )
+    {
+      break; //Stop rotating when line is detected.
+    }
+  }
+}
 
 void setup()
 {
@@ -161,8 +186,6 @@ void setup()
   servoLeft.writeMicroseconds(servoSpeedLeft);
   servoRight.writeMicroseconds(servoSpeedRight);
 
-  SoundEnable();
-
   Serial.println("Geekbot V2 Line Follower Starting");
 }
 
@@ -174,18 +197,40 @@ void loop()
   case IDLE_STATE:
     motorsStop(); //Stops both motors
     nextState = READ_LINE;
+    lastTurnDirection = IDLE_STATE;
     break;
   case READ_LINE:
-    if( mySensorBar.getDensity() < 7 )
+    if ( mySensorBar.getDensity() == 0 ) //Lost line completely?
+    {
+      switch( lastTurnDirection )
+      {
+      case GO_LEFT:
+        recoverLineLeft();
+        nextState = READ_LINE;
+        break;
+      case GO_RIGHT:
+        recoverLineRight();
+        nextState = READ_LINE;
+        break;
+      default:
+        motorsStop();
+        mySounds.play( soundDisconnection );
+        delay(1000); //Wait a second to prevent the sound from looping on itself
+        nextState = IDLE_STATE;
+      }
+    }
+    else if( mySensorBar.getDensity() < 7 )
     {
       nextState = GO_FORWARD;
       if( mySensorBar.getPosition() < -50 )
       {
         nextState = GO_LEFT;
+        lastTurnDirection = GO_LEFT;
       }
       if( mySensorBar.getPosition() > 50 )
       {
         nextState = GO_RIGHT;
+        lastTurnDirection = GO_RIGHT;
       }
     }
     break;
@@ -205,7 +250,7 @@ void loop()
     motorsStop(); //Stops both motors
     while(1)
     {
-      SoundPlay(WHISTLE);
+      mySounds.play( soundWhistle );
       delay(1000);
     }
     break;
