@@ -27,13 +27,14 @@ int navigationCommand = NAV_STOP;
 
 PiezoEffects * navigationSounds;
 
-const int commandListSize = 4;
+const int commandListSize = 5;
 String commandList[commandListSize] =
 {
   "Go Straight",
   "Turn Left",
   "Turn Right",
-  "End Route"
+  "End Route",
+  "End Route & Rotate"
 };
 
 /* I2C LCD Control */
@@ -399,6 +400,13 @@ void intersectionDetected()
     intersectionRight();
     break;
   case NAV_STOP:
+    motorsStop();
+    navigationSounds->play( soundBeeps );
+    currentNavigationLocation = currentNavigationDestination;
+    currentNavigationDestination = -1;
+    currentNavigationIntersection = -1;
+    break;
+  case NAV_STOP_ROTATE:
     navigationSounds->play( soundWhistle );
     intersectionUTurn();
     motorsStop();

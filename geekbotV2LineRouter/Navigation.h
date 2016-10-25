@@ -16,6 +16,7 @@ enum NavCmds
 	NAV_LEFT,
 	NAV_RIGHT,
 	NAV_STOP,
+	NAV_STOP_ROTATE,
 	NAV_IDLE
 };
 
