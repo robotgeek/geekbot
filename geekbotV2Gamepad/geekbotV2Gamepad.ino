@@ -59,10 +59,10 @@ const int CW_MAX_SPEED = 1250;
 const int CCW_MED_SPEED = 1660;
 const int CW_MED_SPEED = 1300;
 
+const int SERVO_TURN_SPEED_HIGH = 50; //For in place rotation. Applied to CW and CCW_MIN_SPEEDs
+const int SERVO_TURN_SPEED_LOW = 25; //For in place rotation. Applied to CW and CCW_MIN_SPEEDs
+int SERVO_TURN_SPEED = SERVO_TURN_SPEED_HIGH; //For rotating in place (controller selectable)
 int SERVO_DRIVE_TURN_SPEED = 70; //For turning while driving (controller selectable)
-int SERVO_TURN_SPEED = 50; //For in place turning. Applied to CW and CCW_MIN_SPEEDs
-const int SERVO_TURN_SPEED_HIGH = 50;
-const int SERVO_TURN_SPEED_LOW = 25;
 
 Servo servoLeft, servoRight;      //wheel servo objects
 
