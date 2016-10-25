@@ -122,21 +122,21 @@ bool navigationCheckMap()
     {
       if ( digitalRead(LCD_UP_PIN) == LOW )
       {
-        navigationSounds->play( soundUp );
+        navigationSounds->play( soundOneBeep );
         if ( --lcdCurrentSelection < 0 ) lcdCurrentSelection = commandListSize - 1;
         delay(250); //debounce time
         break;
       }
       if ( digitalRead(LCD_DOWN_PIN) == LOW )
       {
-        navigationSounds->play( soundDown );
+        navigationSounds->play( soundOneBeep );
         if ( ++lcdCurrentSelection == commandListSize ) lcdCurrentSelection = 0;
         delay(250); //debounce time
         break;
       }
       if ( digitalRead(LCD_PLAY_PIN) == LOW )
       {
-        navigationSounds->play( soundUhoh );
+        navigationSounds->play( soundOneBeep );
 
         if ( lcdCurrentSelection == commandListSize - 1 ) //Check if we are selecting "Turn Around & Finish"
         {
