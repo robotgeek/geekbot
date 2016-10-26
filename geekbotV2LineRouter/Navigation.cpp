@@ -139,7 +139,8 @@ bool navigationCheckMap()
       {
         navigationSounds->play( soundOneBeep );
 
-        if ( lcdCurrentSelection == commandListSize - 1 ) //Check if we are selecting "Turn Around & Finish"
+        //Check if we are selecting "End Route" or "End Route & Rotate"
+        if ( lcdCurrentSelection > 2 )
         {
           routeHomeGoal[ currentIntersection ] = lcdCurrentSelection; //Save selection
           routeGoalHome[ currentIntersection ] = lcdCurrentSelection; //Store route finish
