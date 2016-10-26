@@ -43,20 +43,22 @@ const int RIGHT_SERVO_PIN = 11;
 const int GAMEPAD_INPUT_PIN = 2;
 
 //Speed constants for servo wheel speeds in microseconds
-const int CCW_MAX_SPEED = 1750; //Left wheel forward speed
-const int CCW_MED_SPEED = 1660;
-const int CCW_MIN_SPEED = 1580;
-const int CW_MAX_SPEED = 1250; //Right wheel forward speed
-const int CW_MED_SPEED = 1300;
-const int CW_MIN_SPEED = 1400;
-const int SERVO_STOP = 1500; //Servo pulse in microseconds for stopped servo
-const int SERVO_ROTATE_SPEED_HIGH = 50; //For in place rotation. Applied to CW and CCW_MIN_SPEEDs
-const int SERVO_ROTATE_SPEED_LOW = 25; //For in place rotation. Applied to CW and CCW_MIN_SPEEDs
-const int MAX_TRIM_ADJUSTMENT = 100; //Limit rotation knob trim effect in microseconds
+const int CCWMaxSpeed = 1750; //Left wheel forward speed
+const int CCWMedSpeed = 1660;
+const int CCWMinSpeed = 1580;
+const int CWMaxSpeed = 1250; //Right wheel forward speed
+const int CWMedSpeed = 1300;
+const int CWMinSpeed = 1400;
+const int ServoStopSpeed = 1500; //Servo pulse in microseconds for stopped servo
+const int ServoRotateSpeedHigh = 50; //For in place rotation. Applied to CW and CCW_MIN_SPEEDs
+const int ServoRotateSpeedLow = 25; //For in place rotation. Applied to CW and CCW_MIN_SPEEDs
+const int MaxTrimAdjustment = 100; //Limit rotation knob trim effect in microseconds
 
-//Gamepad
+//Gamepad constants
 const unsigned long gamepadTimeout = 250; //Milliseconds to wait without control input for stopping robot (150 minimum)
 const bool useModeB = false; //Set to true if your controller is switched to mode B
+
+//Gamepad control
 IR_Gamepad myGamepad(GAMEPAD_INPUT_PIN, useModeB); //IR Gamepad object
 unsigned long gamepadCommandTimestamp = millis(); //Milliseconds since last command was received
 
@@ -68,14 +70,14 @@ enum SpeedSelections
   SPEED_MAX
 };
 Servo servoLeft, servoRight; //Wheel servo objects
-int servoRotateSpeed = SERVO_ROTATE_SPEED_HIGH; //For rotating in place (controller selectable) default HIGH
+int servoRotateSpeed = ServoRotateSpeedHigh; //For rotating in place (controller selectable) default HIGH
 int servoDriveTurningSpeed = 70; //For turning while driving (controller selectable) default 70 (microseconds)
-int servoSpeedLeft = SERVO_STOP; //Left servo speed to be sent to servo
-int servoSpeedRight = SERVO_STOP; //Right servo speed to be sent to servo
-int leftFwdSpeed = CCW_MAX_SPEED; //Currently selected left forward speed
-int leftRevSpeed = CW_MAX_SPEED; //Currently selected left reverse speed
-int rightFwdSpeed = CW_MAX_SPEED; //Currently selected right forward speed
-int rightRevSpeed = CCW_MAX_SPEED; //Currently selected right reverse speed
+int servoSpeedLeft = ServoStopSpeed; //Left servo speed to be sent to servo
+int servoSpeedRight = ServoStopSpeed; //Right servo speed to be sent to servo
+int leftFwdSpeed = CCWMaxSpeed; //Currently selected left forward speed
+int leftRevSpeed = CWMaxSpeed; //Currently selected left reverse speed
+int rightFwdSpeed = CWMaxSpeed; //Currently selected right forward speed
+int rightRevSpeed = CCWMaxSpeed; //Currently selected right reverse speed
 int currentSpeed = SPEED_MAX; //Currently selected speed from SpeedSelections enumeration
 
 //Wheel speed trim control
@@ -84,7 +86,7 @@ int wheelSpeedTrimFromGamepad = 0; //Gamepad selectable wheel speed trim
 void updateDriveTrim()
 {
   int knob_value = analogRead( TRIM_KNOB_PIN );
-  wheelSpeedTrim = map( knob_value, 0, 1023, -MAX_TRIM_ADJUSTMENT, MAX_TRIM_ADJUSTMENT );
+  wheelSpeedTrim = map( knob_value, 0, 1023, -MaxTrimAdjustment, MaxTrimAdjustment );
 }
 
 //Piezo effects (sounds)
@@ -115,8 +117,8 @@ void loop()
   {
     updateDriveTrim();
     gamepadCommandTimestamp = millis();
-    servoSpeedLeft = SERVO_STOP;
-    servoSpeedRight = SERVO_STOP;
+    servoSpeedLeft = ServoStopSpeed;
+    servoSpeedRight = ServoStopSpeed;
 
     if ( myGamepad.button_press_up() )
     {
@@ -153,14 +155,14 @@ void loop()
     else if ( myGamepad.button_press_left() )
     {
       Serial.print( "LEFT" );
-      servoSpeedLeft = CW_MIN_SPEED - servoRotateSpeed;
-      servoSpeedRight = CW_MIN_SPEED - servoRotateSpeed;
+      servoSpeedLeft = CWMinSpeed - servoRotateSpeed;
+      servoSpeedRight = CWMinSpeed - servoRotateSpeed;
     }
     else if ( myGamepad.button_press_right() )
     {
       Serial.print( "RIGHT" );
-      servoSpeedLeft = CCW_MIN_SPEED + servoRotateSpeed;
-      servoSpeedRight = CCW_MIN_SPEED + servoRotateSpeed;
+      servoSpeedLeft = CCWMinSpeed + servoRotateSpeed;
+      servoSpeedRight = CCWMinSpeed + servoRotateSpeed;
     }
 
     if ( myGamepad.button_press_start() )
@@ -198,21 +200,23 @@ void loop()
       switch( currentSpeed )
       {
       case SPEED_MIN:
+        //Set medium speed
         mySounds.play( soundUp );
-        servoRotateSpeed = SERVO_ROTATE_SPEED_HIGH;
+        servoRotateSpeed = ServoRotateSpeedHigh; //Apply more change with med/max speed
         currentSpeed = SPEED_MED;
-        leftFwdSpeed = CCW_MED_SPEED;
-        leftRevSpeed = CW_MED_SPEED;
-        rightFwdSpeed = CW_MED_SPEED;
-        rightRevSpeed = CCW_MED_SPEED;
+        leftFwdSpeed = CCWMedSpeed;
+        leftRevSpeed = CWMedSpeed;
+        rightFwdSpeed = CWMedSpeed;
+        rightRevSpeed = CCWMedSpeed;
         break;
       case SPEED_MED:
+        //Set maximum speed
         mySounds.play( soundUp );
         currentSpeed = SPEED_MAX;
-        leftFwdSpeed = CCW_MAX_SPEED;
-        leftRevSpeed = CW_MAX_SPEED;
-        rightFwdSpeed = CW_MAX_SPEED;
-        rightRevSpeed = CCW_MAX_SPEED;
+        leftFwdSpeed = CCWMaxSpeed;
+        leftRevSpeed = CWMaxSpeed;
+        rightFwdSpeed = CWMaxSpeed;
+        rightRevSpeed = CCWMaxSpeed;
         break;
       default:
         mySounds.play( soundUhoh );
@@ -225,21 +229,23 @@ void loop()
       switch( currentSpeed )
       {
       case SPEED_MED:
+        //Set minimum speed
         mySounds.play( soundDown );
         currentSpeed = SPEED_MIN;
-        servoRotateSpeed = SERVO_ROTATE_SPEED_LOW;
-        leftFwdSpeed = CCW_MIN_SPEED + 20;
-        leftRevSpeed = CW_MIN_SPEED - 20;
-        rightFwdSpeed = CW_MIN_SPEED - 20;
-        rightRevSpeed = CCW_MIN_SPEED + 20;
+        servoRotateSpeed = ServoRotateSpeedLow; //Apply less change with low speed
+        leftFwdSpeed = CCWMinSpeed + 20;
+        leftRevSpeed = CWMinSpeed - 20;
+        rightFwdSpeed = CWMinSpeed - 20;
+        rightRevSpeed = CCWMinSpeed + 20;
         break;
       case SPEED_MAX:
+        //Set maximum speed
         mySounds.play( soundDown );
         currentSpeed = SPEED_MED;
-        leftFwdSpeed = CCW_MED_SPEED;
-        leftRevSpeed = CW_MED_SPEED;
-        rightFwdSpeed = CW_MED_SPEED;
-        rightRevSpeed = CCW_MED_SPEED;
+        leftFwdSpeed = CCWMedSpeed;
+        leftRevSpeed = CWMedSpeed;
+        rightFwdSpeed = CWMedSpeed;
+        rightRevSpeed = CCWMedSpeed;
         break;
       default:
         mySounds.play( soundUhoh );
@@ -270,8 +276,8 @@ void loop()
   }
   else if ( gamepadCommandTimestamp + gamepadTimeout < millis() )
   {
-    servoSpeedLeft = SERVO_STOP;
-    servoSpeedRight = SERVO_STOP;
+    servoSpeedLeft = ServoStopSpeed;
+    servoSpeedRight = ServoStopSpeed;
   }
 
   servoLeft.writeMicroseconds(servoSpeedLeft);
