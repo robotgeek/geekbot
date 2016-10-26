@@ -158,15 +158,10 @@ bool navigationCheckDestination()
       if ( currentNavigationLocation != currentNavigationHome && navigationDestinationPromptTime + navigationReturnHomeTimeout * 1000ul < millis() )
       {
         //Timeout has occured.. we are going to return home
-        navigationSounds->play( soundUhoh );
-        currentNavigationDestination = currentNavigationHome;
-        lcd.clear();
-        lcd.print( "Returning home!" );
         lcd.setCursor(0, 1);
         lcd.print( navigationReturnHomeTimeout );
         lcd.print( " second timeout." );
-        lcd.setCursor(0, 2); lcd.print( "Next stop:" );
-        lcd.setCursor(0, 3); lcd.print( destinationList[currentNavigationHome] );
+        navigationReturnHome();
         break;
       }
 #endif
@@ -219,6 +214,17 @@ bool navigationCheckDestination()
     return false;
   }
   return true;
+}
+
+void navigationReturnHome()
+{
+  navigationSounds->play( soundUhoh );
+  currentNavigationDestination = currentNavigationHome;
+  lcd.clear();
+  lcd.print( "Returning home!" );
+
+  lcd.setCursor(0, 2); lcd.print( "Next stop:" );
+  lcd.setCursor(0, 3); lcd.print( destinationList[currentNavigationHome] );
 }
 
 void navigationCancel()

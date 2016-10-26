@@ -10,6 +10,10 @@
 #define AUTO_RETURN_HOME
 
 extern const uint8_t LCD_STOP_PIN;
+extern int currentNavigationHome;
+extern int currentNavigationLocation;
+extern int currentNavigationDestination;
+
 enum NavCmds
 {
 	NAV_FWD = 1,
@@ -22,6 +26,7 @@ enum NavCmds
 void navigationInit(PiezoEffects * mySounds);
 bool navigationCheckLocation();
 bool navigationCheckDestination();
+void navigationReturnHome();
 void navigationCancel();
 void intersectionForward();
 void intersectionRight();
