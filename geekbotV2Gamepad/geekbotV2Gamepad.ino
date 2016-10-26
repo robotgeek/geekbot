@@ -104,6 +104,8 @@ void setup()
   servoLeft.writeMicroseconds(servoSpeedLeft);
   servoRight.writeMicroseconds(servoSpeedRight);
 
+  myGamepad.enable();
+
   Serial.println("Geekbot V2 Start");
 }
 
