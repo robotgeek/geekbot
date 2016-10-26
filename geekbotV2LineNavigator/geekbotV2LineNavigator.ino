@@ -82,4 +82,30 @@ void loop()
   {
     lineFollowerUpdate(); //Will follow the line and handle any intersections
   }
+
+  //customActionExampe(); //Optionally perform custom actions
+}
+
+/* This is an advanced example of performing a custom action at a speficic destination */
+void customActionExampe()
+{
+  //If navigation has reached specific location and we have no specific destination perform custom actions
+  if ( currentNavigationLocation == 1 && currentNavigationDestination == -1 ) //Location 1 in myMap.cpp is "Garage"
+  {
+    delay(1000); //Wait a second
+    mySounds.play( soundOneBeep ); //Play sound from PiezoEffects library
+    motorsForward(); //Drive forward
+    delay(250); //Wait 250 milliseconds
+    motorsStop(); //Stop after 250 milliseconds
+    mySounds.play( soundOneBeep ); //Play sound from PiezoEffects library
+    motorsRotateLeft();
+    delay(500);
+    motorsStop(); //Stop after 250 milliseconds
+    mySounds.play( soundOneBeep ); //Play sound from PiezoEffects library
+    motorsRotateRight();
+    delay(500);
+    motorsStop(); //Stop after 250 milliseconds
+    mySounds.play( soundOneBeep ); //Play sound from PiezoEffects library
+    navigationReturnHome(); //Specify return home so program can resume.
+  }
 }
