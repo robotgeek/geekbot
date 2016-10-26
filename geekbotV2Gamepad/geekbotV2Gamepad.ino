@@ -71,7 +71,7 @@ Servo servoLeft, servoRight; //Wheel servo objects
 int servoRotateSpeed = SERVO_ROTATE_SPEED_HIGH; //For rotating in place (controller selectable) default HIGH
 int servoDriveTurningSpeed = 70; //For turning while driving (controller selectable) default 70 (microseconds)
 int servoSpeedLeft = SERVO_STOP; //Left servo speed to be sent to servo
-int servoSpeedRight = SERVO_STOP; //Right servo speed to be sent to server
+int servoSpeedRight = SERVO_STOP; //Right servo speed to be sent to servo
 int leftFwdSpeed = CCW_MAX_SPEED; //Currently selected left forward speed
 int leftRevSpeed = CW_MAX_SPEED; //Currently selected left reverse speed
 int rightFwdSpeed = CW_MAX_SPEED; //Currently selected right forward speed
