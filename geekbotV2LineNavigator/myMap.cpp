@@ -30,7 +30,7 @@ uint8_t routeDogsGarage[] = { NAV_RIGHT, NAV_RIGHT, NAV_UTURN, NAV_STOP };
 uint8_t routeDogsKitchen[] = { NAV_LEFT, NAV_UTURN, NAV_STOP };
 
 /* Use this route when the location and destination match in the navigationMap below */
-const uint8_t routeNoRoute[] = { NAV_STOP };
+uint8_t routeNoRoute[] = { NAV_STOP };
 
 /* Define your navigationMap for each location and it's destinations */
 uint8_t * navigationMap[][MAP_LOCATION_COUNT] =

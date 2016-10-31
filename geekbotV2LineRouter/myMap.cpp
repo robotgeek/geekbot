@@ -15,7 +15,7 @@ uint8_t routeHomeGoal[16] = { NAV_IDLE };
 uint8_t routeGoalHome[16] = { NAV_IDLE };
 
 /* Use this route when the location and destination match in the navigationMap below */
-const uint8_t routeNoRoute[] = { NAV_IDLE };
+uint8_t routeNoRoute[] = { NAV_IDLE };
 
 /* Define your navigationMap for each location and it's destinations */
 uint8_t * navigationMap[][MAP_LOCATION_COUNT] =
