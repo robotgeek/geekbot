@@ -154,6 +154,8 @@ bool navigationCheckDestination()
             digitalRead(LCD_STOP_PIN) == HIGH
           )
     {
+      if ( navigationDestinationPromptTime + 5000 < millis() ) break; //Break free every 5 seconds (auto return broken)
+
 #ifdef AUTO_RETURN_HOME
       if ( currentNavigationLocation != currentNavigationHome && navigationDestinationPromptTime + navigationReturnHomeTimeout * 1000ul < millis() )
       {

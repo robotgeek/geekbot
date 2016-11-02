@@ -61,7 +61,7 @@ PiezoEffects mySounds( BUZZER_PIN );
 
 void setup()
 {
-  Serial.begin(38400);
+  Serial.begin(115200);
   Serial.println("Geekbot Navigator Starting...");
 
   motorsInit( LEFT_SERVO_PIN, RIGHT_SERVO_PIN );
@@ -84,6 +84,39 @@ void loop()
   }
 
   //customActionExampe(); //Optionally perform custom actions
+
+  processSerialCommand();
+}
+
+void processSerialCommand()
+{
+  char buffer[64] = {0};
+  int i = 0;
+
+  if ( Serial.available() )
+  {
+    delay(100); //wait for remaining bytes
+    while( Serial.available() && i < sizeof(buffer) )
+    {
+      buffer[i++] = Serial.read();
+    }
+    buffer[i++] = '\0';
+  }
+
+  if( i > 0 )
+  {
+    //Compare strings and perform actions
+    if (strncmp(buffer, "dest:", 5) == 0)
+    {
+      int newDestination = atoi( buffer + 5 );
+      if ( newDestination != currentNavigationLocation )
+      {
+        currentNavigationDestination = newDestination;
+        mySounds.play( soundWhistle );
+        mySounds.play( soundWhistle );
+      }
+    }
+  }
 }
 
 /* This is an advanced example of performing a custom action at a speficic destination */
