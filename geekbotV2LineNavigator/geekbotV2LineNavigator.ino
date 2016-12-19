@@ -62,7 +62,7 @@ PiezoEffects mySounds( BUZZER_PIN );
 void setup()
 {
   Serial.begin(115200);
-  Serial.println("Geekbot Navigator Starting...");
+  //Serial.println("Geekbot Navigator Starting...");
 
   motorsInit( LEFT_SERVO_PIN, RIGHT_SERVO_PIN );
   navigationInit( &mySounds );
@@ -75,6 +75,8 @@ void setup()
   digitalWrite(LED_RIGHT_PIN, HIGH);
 }
 
+unsigned long lastSerialUpdate = millis();
+
 void loop()
 {
   //Update the line following state if the navigation location and destination are set
@@ -85,7 +87,15 @@ void loop()
 
   //customActionExampe(); //Optionally perform custom actions
 
-  processSerialCommand();
+  processSerialCommand(); //Check for serial data from ESP8266
+
+  //Send robot status every second
+  if ( lastSerialUpdate + 1000 < millis() )
+  {
+    lastSerialUpdate = millis();
+    updateESP8266();
+  }
+
 }
 
 void processSerialCommand()
@@ -116,7 +126,25 @@ void processSerialCommand()
         mySounds.play( soundWhistle );
       }
     }
+    //Compare strings and perform actions
+    if (strncmp(buffer, "home:", 5) == 0)
+    {
+      currentNavigationHome = atoi( buffer + 5 );
+      mySounds.play( soundWhistle );
+      mySounds.play( soundUp );
+      mySounds.play( soundDown );
+      mySounds.play( soundWhistle );
+    }
   }
+}
+
+/* Sends robot status string to serial device */
+void updateESP8266()
+{
+  char resp[16] = { 0 };
+  bool robotBusy = currentNavigationDestination == -1 ? 0 : 1;
+  snprintf ( resp, 15, "robot:%d,%d,%d", currentNavigationHome, currentNavigationLocation, robotBusy );
+  Serial.println( resp );
 }
 
 /* This is an advanced example of performing a custom action at a speficic destination */
