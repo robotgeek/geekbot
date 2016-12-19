@@ -130,11 +130,11 @@ void processSerialCommand()
     if (strncmp(buffer, "home:", 5) == 0)
     {
       currentNavigationHome = atoi( buffer + 5 );
-      mySounds.play( soundWhistle );
       mySounds.play( soundUp );
       mySounds.play( soundDown );
-      mySounds.play( soundWhistle );
     }
+
+    updateESP8266();
   }
 }
 
