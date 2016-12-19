@@ -15,6 +15,8 @@ unsigned long navigationReturnHomeTimeout = 60; //seconds until timeout so robot
 int currentNavigationHome = -1;
 #endif
 
+unsigned long navigationDestinationPromptTime = millis();
+
 int currentNavigationLocation = -1; //Below 0 is unknown, otherwise will be index of destinationList[]
 int currentNavigationDestination = -1; //Below 0 is unknown, otherwise will be index of destinationList[]
 int currentNavigationIntersection = -1; //Below 0 is unknown, otherwise will be index of route in destinationList[]
@@ -145,17 +147,14 @@ bool navigationCheckDestination()
     lcd.print( "Where am I going?" );
     lcdSelectDestination();
 
-#ifdef AUTO_RETURN_HOME
-    unsigned long navigationDestinationPromptTime = millis();
-#endif
+    unsigned long thisPromptTime = millis();
+
     while ( digitalRead(LCD_UP_PIN) == HIGH ||
             digitalRead(LCD_DOWN_PIN) == HIGH ||
             digitalRead(LCD_PLAY_PIN) == HIGH ||
             digitalRead(LCD_STOP_PIN) == HIGH
           )
     {
-      if ( navigationDestinationPromptTime + 5000 < millis() ) break; //Break free every 5 seconds (auto return broken)
-
 #ifdef AUTO_RETURN_HOME
       if ( currentNavigationLocation != currentNavigationHome && navigationDestinationPromptTime + navigationReturnHomeTimeout * 1000ul < millis() )
       {
@@ -167,6 +166,9 @@ bool navigationCheckDestination()
         break;
       }
 #endif
+
+      if ( thisPromptTime + 5000 < millis() ) break; //Break free every 5 seconds to check for serial data
+
       if ( digitalRead(LCD_UP_PIN) == LOW )
       {
         navigationSounds->play( soundUp );
@@ -236,6 +238,7 @@ void navigationCancel()
   currentNavigationDestination = -1; //Reset travel destination
   currentNavigationIntersection = -1; //Reset navigation intersection counter
   navigationSounds->play( soundSad );
+  navigationDestinationPromptTime = millis();
 }
 
 void intersectionForward()
@@ -375,5 +378,6 @@ void intersectionDetected()
     currentNavigationLocation = currentNavigationDestination;
     currentNavigationDestination = -1;
     currentNavigationIntersection = -1;
+    navigationDestinationPromptTime = millis();
   }
 }
