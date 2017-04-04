@@ -51,9 +51,9 @@ const uint8_t LCD_STOP_PIN = 8;	//Digital Pin 8
 const bool LINE_COLOR =  0;
 
 //Robot Auto-Driving Speed Parameters
-const unsigned int DRIVE_SPEED 		= 50;	//Forward/Reverse Driving Speed Value, 0-100
-const unsigned int TURN_SPEED  		= 50;	//Turning while Driving Speed, 0-100
-const unsigned int ROTATE_SPEED  	= 50;	//Turning in place (rotating) Speed, 0-100
+const unsigned int DRIVE_SPEED 		= 100;	//Forward/Reverse Driving Speed Value, 0-100
+const unsigned int TURN_SPEED  		= 100;	//Turning while Driving Speed, 0-100
+const unsigned int ROTATE_SPEED  	= 100;	//Turning in place (rotating) Speed, 0-100
 
 /* Comment out this define if you would like to disable the return home feature */
 #define AUTO_RETURN_HOME
@@ -65,8 +65,8 @@ const unsigned int ROTATE_SPEED  	= 50;	//Turning in place (rotating) Speed, 0-1
 
 //Servo control paramaters. Applied in Motors.cpp/h
 const int SERVO_STOP    = 1500; //servo pulse in microseconds for stopped servo
-const int CCW_MIN_SPEED = 1580; //Speed constants from RGS-4C No Load Test Data
-const int CW_MIN_SPEED  = 1400;
+const int CCW_MIN_SPEED = 1680; //Speed constants from RGS-4C No Load Test Data
+const int CW_MIN_SPEED  = 1300;
 
 const int SPEED_MIN = 10;
 const int SPEED_MAX = 30;

@@ -1,5 +1,5 @@
 /***********************************************************************************
- *                         RobotGeek Geekbot V2 Explorer
+ *                         RobotGeek Geekbot V3 Explorer
  *  __________________
  *   |              |
  *   |     ___      |
@@ -44,42 +44,76 @@
 
 GeekBot myGeekBot; // Create GeekBot object, named myGeekBot
 int playButtonState = HIGH;
+int upButtonState = HIGH;
+int downButtonState = HIGH;
+int stopButtonState = HIGH;
 
 void setup()
 {
   Serial.begin(38400);
   Serial.println("Geekbot Explorer Starting...");
   pinMode(LCD_PLAY_PIN, INPUT);
+  pinMode(LCD_UP_PIN, INPUT);
+  pinMode(LCD_DOWN_PIN, INPUT);
+  pinMode(LCD_STOP_PIN, INPUT);
   myGeekBot.init();
-  delay(1000);
+  delay(500);
   myGeekBot.sound(soundUp);
 }
 
 void loop()
 {
-//  myGeekBot.timedRotate(1000, 50); // time in mS, rotation speed CCW -100 to CW +100 (Clockwise Turn)
-//  myGeekBot.timedRotate(1000, -50); // time in mS, rotation speed CCW -100 to CW +100 (Counter Clockwise Turn)
-//  myGeekBot.timedDrive(2000, 50); //time in mS, travel speed -100 to 100 (Drive Forward)
-//  myGeekBot.timedDrive(2000, -50); //time in mS, travel speed -100 to 100 (Drive Backward)
+
   playButtonState = digitalRead(LCD_PLAY_PIN);
+  upButtonState = digitalRead(LCD_UP_PIN);
+  downButtonState = digitalRead(LCD_DOWN_PIN);
+  stopButtonState = digitalRead(LCD_STOP_PIN);
+  
   if (playButtonState == LOW)
   {
-  customFunction();
+  customFunction0();
+  }  
+  if (stopButtonState == LOW)
+  {
+  customFunction1();
+  }  
+  if (upButtonState == LOW)
+  {
+  customFunction2();
+  }  
+  if (downButtonState == LOW)
+  {
+  customFunction3();
   }
 }
 
-void customFunction()
+void customFunction0()
 {
-  myGeekBot.timedRotate(2000, 50); // time in mS, rotation speed CCW -100 to CW +100
-  delay(2000); //pause delay in mS
-  myGeekBot.timedDrive(3000, 50); //time in mS, travel speed -100 to 100
-  delay(3000); //pause delay in mS
-  myGeekBot.recoverLine(1); //Follow Line until Intersection, state = NAV_CMD for next action.
-  myGeekBot.sound(soundWhistle);
   myGeekBot.lineFollow(NAV_LEFT); //Follow Line until Intersection, state = NAV_CMD for next action.
   myGeekBot.lineFollow(NAV_FWD); //Follow Line until Intersection, state = NAV_CMD for next action.
   myGeekBot.lineFollow(NAV_RIGHT); //Follow Line until Intersection, state = NAV_CMD for next action.
   myGeekBot.lineFollow(NAV_UTURN); //Follow Line until Intersection, state = NAV_CMD for next action.
+  myGeekBot.lineFollow(NAV_STOP); //Follow Line until Intersection, state = NAV_CMD for next action.
+}
+
+void customFunction1()
+{
+  myGeekBot.sound(soundWhistle);  
+}
+
+void customFunction2()
+{
+  myGeekBot.timedDrive(2000, 50); //time in mS, travel speed -100 to 100 (Drive Forward)
+  myGeekBot.timedDrive(2000, -50); //time in mS, travel speed -100 to 100 (Drive Backward)
+  myGeekBot.recoverLine(1); //Follow Line until Intersection, state = NAV_CMD for next action.
+  myGeekBot.lineFollow(NAV_STOP); //Follow Line until Intersection, state = NAV_CMD for next action.
+}
+
+void customFunction3()
+{
+  myGeekBot.timedRotate(1000, 50); // time in mS, rotation speed CCW -100 to CW +100 (Clockwise Turn)
+  myGeekBot.timedRotate(1000, -50); // time in mS, rotation speed CCW -100 to CW +100 (Counter Clockwise Turn)
+  myGeekBot.recoverLine(1); //Follow Line until Intersection, state = NAV_CMD for next action.
   myGeekBot.lineFollow(NAV_STOP); //Follow Line until Intersection, state = NAV_CMD for next action.
 }
 
