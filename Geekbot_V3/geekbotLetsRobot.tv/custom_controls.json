@@ -1,0 +1,43 @@
+[  
+   {  
+      "button_panels":[  
+         {  
+            "button_panel_label":"movement",
+            "buttons":[  
+               {  
+                  "label":"left",
+                  "command":"l"
+               },
+               {  
+                  "label":"right",
+                  "command":"r"
+               },
+               {  
+                  "label":"forward",
+                  "command":"f"
+               },
+               {  
+                  "label":"reverse",
+                  "command":"b"
+               },
+               {  
+                  "label":"Look Up",
+                  "command":"lookup"
+               },
+               {  
+                  "label":"Look Down",
+                  "command":"lookdown"
+               },
+               {  
+                  "label":"Light On",
+                  "command":"lighton"
+               },
+               {  
+                  "label":"Light Off",
+                  "command":"lightoff"
+               }
+            ]
+         }
+      ]
+   }
+]
