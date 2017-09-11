@@ -60,15 +60,14 @@ enum SpeedSelections
 };
 Servo servoNeck;
 Servo servoLeft, servoRight; //Wheel servo objects
-int servoRotateSpeed = ServoRotateSpeedLow; //For rotating in place
+int servoRotateSpeed = ServoRotateSpeedHigh; //For rotating in place
 int servoDriveTurningSpeed = 40; //For turning while driving
 int servoSpeedLeft = ServoStopSpeed; //Left servo speed to be sent to servo
 int servoSpeedRight = ServoStopSpeed; //Right servo speed to be sent to servo
-int leftFwdSpeed = CCWMedSpeed; //Currently selected left forward speed
-int leftRevSpeed = CWMedSpeed; //Currently selected left reverse speed
-int rightFwdSpeed = CWMedSpeed; //Currently selected right forward speed
-int rightRevSpeed = CCWMedSpeed; //Currently selected right reverse speed
-int currentSpeed = SPEED_MED; //Currently selected speed from SpeedSelections enumeration
+int leftFwdSpeed = CCWMaxSpeed; //Currently selected left forward speed
+int leftRevSpeed = CWMaxSpeed; //Currently selected left reverse speed
+int rightFwdSpeed = CWMaxSpeed; //Currently selected right forward speed
+int rightRevSpeed = CCWMaxSpeed; //Currently selected right reverse speed
 
 const int neckUp = 2000;
 const int neckDown = 1000;
