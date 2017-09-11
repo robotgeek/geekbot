@@ -29,8 +29,8 @@
 
 //Pin Constants
 const int TRIM_KNOB_PIN = 0;
-const int LEFT_SERVO_PIN = 3;
-const int RIGHT_SERVO_PIN = 5;
+const int LEFT_SERVO_PIN = 10;
+const int RIGHT_SERVO_PIN = 11;
 const int HEAD_TILT_PIN = 9;
 const int SPOTLIGHT_PIN = 12;
 
@@ -103,31 +103,7 @@ void ParseIncoming( char* incoming )
     checklen = strlen( incoming );
   }
 
-  if( strncmp( incoming, "f", 1 ) == 0 )
-  {
-    commandTimestamp = millis();
-    MoveFrontBack = 1;
-    MoveLeftRight = 0;
-  }
-  else if( strncmp( incoming, "b", 1 ) == 0 )
-  {
-    commandTimestamp = millis();
-    MoveFrontBack = -1;
-    MoveLeftRight = 0;
-  }
-  else if( strncmp( incoming, "l", 1 ) == 0 )
-  {
-    commandTimestamp = millis();
-    MoveLeftRight = -1;
-    MoveFrontBack = 0;
-  }
-  else if( strncmp( incoming, "r", 1 ) == 0 )
-  {
-    commandTimestamp = millis();
-    MoveLeftRight = 1;
-    MoveFrontBack = 0;
-  }
-  else if( strncmp( incoming, "lookup", 6 ) == 0 )
+  if( strncmp( incoming, "lookup", 6 ) == 0 )
   {
     if ( neckPosition + 100 <= neckUp )
     {
@@ -154,6 +130,30 @@ void ParseIncoming( char* incoming )
   else if( strncmp( incoming, "stop", 4 ) == 0 )
   {
     commandTimestamp = 0;
+  }
+  else if( strncmp( incoming, "f", 1 ) == 0 )
+  {
+    commandTimestamp = millis();
+    MoveFrontBack = 1;
+    MoveLeftRight = 0;
+  }
+  else if( strncmp( incoming, "b", 1 ) == 0 )
+  {
+    commandTimestamp = millis();
+    MoveFrontBack = -1;
+    MoveLeftRight = 0;
+  }
+  else if( strncmp( incoming, "l", 1 ) == 0 )
+  {
+    commandTimestamp = millis();
+    MoveLeftRight = -1;
+    MoveFrontBack = 0;
+  }
+  else if( strncmp( incoming, "r", 1 ) == 0 )
+  {
+    commandTimestamp = millis();
+    MoveLeftRight = 1;
+    MoveFrontBack = 0;
   }
   else
   {
