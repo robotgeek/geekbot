@@ -1,0 +1,88 @@
+[  
+   {  
+      "button_panels":[  
+         {  
+            "button_panel_label":"geeky controls",
+            "buttons":[  
+               {  
+                  "label":"left",
+                  "command":"l"
+               },
+               {  
+                  "label":"right",
+                  "command":"r"
+               },
+               {  
+                  "label":"forward",
+                  "command":"f"
+               },
+               {  
+                  "label":"reverse",
+                  "command":"b"
+               },
+               {  
+                  "label":"Look Up",
+                  "command":"lookup"
+               },
+               {  
+                  "label":"Look Down",
+                  "command":"lookdown"
+               },
+               {  
+                  "label":"Light On",
+                  "command":"lighton"
+               },
+               {  
+                  "label":"Light Off",
+                  "command":"lightoff"
+               }
+            ]
+         },
+         {  
+            "button_panel_label":"Control other robots (IR Remote)",
+            "buttons":[  
+               {  
+                  "label":"left",
+                  "command":"irleft"
+               },
+               {  
+                  "label":"right",
+                  "command":"irright"
+               },
+               {  
+                  "label":"forward",
+                  "command":"irfwd"
+               },
+               {  
+                  "label":"reverse",
+                  "command":"irback"
+               },
+               {  
+                  "label":"select",
+                  "command":"irselect"
+               },
+               {  
+                  "label":"start",
+                  "command":"irstart"
+               },
+               {  
+                  "label":"btn0",
+                  "command":"irbtn0"
+               },
+               {  
+                  "label":"btn1",
+                  "command":"irbtn1"
+               },
+               {  
+                  "label":"btn2",
+                  "command":"irbtn2"
+               },
+               {  
+                  "label":"btn3",
+                  "command":"irbtn3"
+               }
+            ]
+         }
+      ]
+   }
+]
